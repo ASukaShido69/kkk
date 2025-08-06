@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Moon, Sun, Filter } from "lucide-react"; // Import Filter icon
+import { Moon, Sun } from "lucide-react";
 import type { Score, Question } from "@/lib/types";
 
 interface QuestionReview extends Question {
@@ -187,74 +187,41 @@ export default function ResultsPage() {
         <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>รีวิวข้อสอบ</h2>
 
         {/* Filter Options */}
-        <Card className={`mb-8 shadow-xl border-2 transition-all duration-300 ${
-          darkMode 
-            ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-600 shadow-slate-900/50' 
-            : 'bg-gradient-to-br from-white to-blue-50 border-blue-200 shadow-blue-100/50'
-        }`}>
-          <CardContent className="pt-8 pb-6">
-            <h3 className={`font-bold text-lg mb-6 flex items-center gap-3 ${
-              darkMode ? 'text-slate-200' : 'text-slate-800'
-            }`}>
-              <Filter className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-              กรองข้อสอบ
-            </h3>
-            <div className="flex flex-wrap gap-4">
+        <Card className={`mb-6 ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
+          <CardContent className="pt-6">
+            <h3 className={`font-medium mb-4 ${darkMode ? 'text-white' : ''}`}>กรองข้อสอบ</h3>
+            <div className="flex flex-wrap gap-3">
               <Button
                 variant={filter === "all" ? "default" : "outline"}
-                size="lg"
+                size="sm"
                 onClick={() => setFilter("all")}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                  filter === "all" 
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700" 
-                    : darkMode
-                      ? "border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-blue-500"
-                      : "border-slate-300 text-slate-600 bg-white hover:bg-blue-50 hover:border-blue-400"
-                }`}
+                className={filter === "all" ? "bg-primary-blue hover:bg-blue-600" : ""}
               >
                 ทั้งหมด ({examQuestions.length})
               </Button>
               <Button
                 variant={filter === "correct" ? "default" : "outline"}
-                size="lg"
+                size="sm"
                 onClick={() => setFilter("correct")}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                  filter === "correct" 
-                    ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700" 
-                    : darkMode
-                      ? "border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-emerald-500"
-                      : "border-slate-300 text-slate-600 bg-white hover:bg-emerald-50 hover:border-emerald-400"
-                }`}
+                className={filter === "correct" ? "bg-green-600 hover:bg-green-700" : ""}
               >
                 ตอบถูก ({examQuestions.filter(q => q.isCorrect).length})
               </Button>
               <Button
                 variant={filter === "incorrect" ? "default" : "outline"}
-                size="lg"
+                size="sm"
                 onClick={() => setFilter("incorrect")}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                  filter === "incorrect" 
-                    ? "bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700" 
-                    : darkMode
-                      ? "border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-red-500"
-                      : "border-slate-300 text-slate-600 bg-white hover:bg-red-50 hover:border-red-400"
-                }`}
+                className={filter === "incorrect" ? "bg-red-600 hover:bg-red-700" : ""}
               >
-                ตอบผิด ({examQuestions.filter(q => !q.isCorrect && q.userAnswer !== undefined).length})
+                ตอบผิด ({examQuestions.filter(q => !q.isCorrect).length})
               </Button>
               <Button
                 variant={filter === "bookmarked" ? "default" : "outline"}
-                size="lg"
+                size="sm"
                 onClick={() => setFilter("bookmarked")}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                  filter === "bookmarked" 
-                    ? "bg-gradient-to-r from-yellow-500 to-amber-600 text-white hover:from-yellow-600 hover:to-amber-700" 
-                    : darkMode
-                      ? "border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-yellow-500"
-                      : "border-slate-300 text-slate-600 bg-white hover:bg-yellow-50 hover:border-yellow-400"
-                }`}
+                className={filter === "bookmarked" ? "bg-yellow-600 hover:bg-yellow-700" : ""}
               >
-                บุ๊กมาร์ก ({examQuestions.filter(q => q.isBookmarked).length})
+                ทำเครื่องหมาย ({examQuestions.filter(q => q.isBookmarked).length})
               </Button>
             </div>
           </CardContent>

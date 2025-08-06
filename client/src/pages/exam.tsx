@@ -42,7 +42,6 @@ export default function ExamPage() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | "error">("saved");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [darkMode, setDarkMode] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0); // State for pagination in navigation grid
 
   // Dark mode effect
   useEffect(() => {
@@ -333,11 +332,11 @@ export default function ExamPage() {
   // Get category progress
   const getCategoryProgress = () => {
     const categoryStats: Record<string, { total: number; answered: number; color: string }> = {};
-
+    
     examQuestions.forEach(question => {
       const categoryInfo = categories.find(cat => cat.id === question.category);
       const categoryKey = categoryInfo?.id || question.category;
-
+      
       if (!categoryStats[categoryKey]) {
         categoryStats[categoryKey] = {
           total: 0,
@@ -345,13 +344,13 @@ export default function ExamPage() {
           color: categoryInfo?.color || "bg-gray-500"
         };
       }
-
+      
       categoryStats[categoryKey].total++;
       if (answers[question.id] !== undefined) {
         categoryStats[categoryKey].answered++;
       }
     });
-
+    
     return categoryStats;
   };
 
@@ -441,7 +440,7 @@ export default function ExamPage() {
             </div>
             <Progress value={progress} className={`w-full h-3 ${darkMode ? 'bg-gray-700' : ''}`} />
           </div>
-
+          
           {/* Enhanced Category Progress Bars */}
           <div className="space-y-3 mb-4">
             <h4 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -450,7 +449,7 @@ export default function ExamPage() {
             {Object.entries(getCategoryProgress()).map(([categoryId, stats]) => {
               const categoryInfo = categories.find(cat => cat.id === categoryId);
               const categoryProgress = (stats.answered / stats.total) * 100;
-
+              
               return (
                 <div key={categoryId} className={`rounded-lg p-3 transition-colors ${
                   darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
@@ -479,7 +478,7 @@ export default function ExamPage() {
               );
             })}
           </div>
-
+          
           <div className="text-xs text-gray-600">
             ความคืบหน้า: {progress.toFixed(1)}% • ตอบแล้ว: {answeredQuestions}/{examQuestions.length} ข้อ
           </div>
@@ -559,116 +558,66 @@ export default function ExamPage() {
                 </div>
               </div>
 
-              {/* Pagination for the Question Grid */}
-              <div className="flex justify-center mb-6">
-                {Array.from({ length: Math.ceil(filteredQuestions.length / 10) }).map((_, pageIndex) => (
-                  <Button
-                    key={pageIndex}
-                    variant={currentPage === pageIndex ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageIndex)}
-                    className={`mx-1 rounded-full w-10 h-10 ${
-                      currentPage === pageIndex
-                        ? 'bg-primary-blue hover:bg-blue-600'
-                        : darkMode
-                          ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {pageIndex + 1}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Question Grid */}
-              <div className="grid grid-cols-5 gap-3 mb-6">
-                {filteredQuestions.slice(currentPage * 10, (currentPage + 1) * 10).map((question, index) => {
-                  const globalIndex = currentPage * 10 + index;
-                  const questionId = question.id;
-                  const isAnswered = answers[questionId] !== undefined;
-                  const isBookmarked = bookmarkedQuestions.includes(questionId);
-                  const isCurrent = globalIndex === currentQuestionIndex;
+              <div className="grid grid-cols-10 gap-3 mb-6">
+                {(selectedCategory === "all" ? examQuestions : examQuestions.filter(q => q.category === selectedCategory)).map((question, filteredIndex) => {
+                  const originalIndex = examQuestions.findIndex(q => q.id === question.id);
+                  const isAnswered = answers[question.id] !== undefined;
+                  const isBookmarked = bookmarkedQuestions.includes(question.id);
+                  const isCurrent = originalIndex === currentQuestionIndex;
                   const categoryInfo = categories.find(cat => cat.id === question.category);
 
                   return (
                     <Button
                       key={question.id}
-                      variant={isCurrent ? "default" : "outline"}
+                      variant="outline"
                       size="sm"
+                      onClick={() => jumpToQuestion(originalIndex)}
                       className={`
-                        relative h-12 w-12 p-0 text-sm font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg
-                        ${isCurrent 
-                          ? `bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/50 scale-110 ring-2 ${darkMode ? 'ring-blue-400' : 'ring-blue-300'}` 
-                          : isAnswered 
-                            ? `bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/30 ${darkMode ? 'hover:from-emerald-400 hover:to-green-500' : 'hover:from-emerald-600 hover:to-green-700'}` 
-                            : `${darkMode 
-                                ? 'bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600 text-slate-300 shadow-slate-900/30 hover:from-slate-600 hover:to-slate-700 hover:border-blue-500' 
-                                : 'bg-gradient-to-br from-white to-slate-50 border-slate-300 text-slate-700 shadow-slate-200/50 hover:from-blue-50 hover:to-blue-100 hover:border-blue-400'}`
+                        relative min-w-[45px] h-12 text-sm font-bold transition-all duration-300 rounded-xl
+                        ${isCurrent
+                          ? `${darkMode ? 'bg-blue-600 hover:bg-blue-700 border-blue-500' : 'bg-blue-600 hover:bg-blue-700 border-blue-600'} text-white shadow-lg transform scale-105`
+                          : isAnswered
+                            ? `${darkMode ? 'bg-green-600 hover:bg-green-700 border-green-500' : 'bg-green-500 hover:bg-green-600 border-green-500'} text-white`
+                            : `${darkMode ? 'bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-200' : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'}`
                         }
-                        ${isBookmarked ? `ring-2 ${darkMode ? 'ring-yellow-400' : 'ring-yellow-500'}` : ''}
+                        ${isBookmarked ? (darkMode ? "ring-2 ring-yellow-500 ring-offset-2 ring-offset-gray-800" : "ring-2 ring-yellow-400 ring-offset-2") : ""}
                       `}
-                      onClick={() => {
-                        setCurrentQuestionIndex(globalIndex);
-                        setShowNavigationGrid(false);
-                      }}
+                      title={`ข้อ ${originalIndex + 1} - ${categoryInfo?.name || question.category}${isBookmarked ? ' (บุ๊กมาร์ก)' : ''}${isAnswered ? ' (ตอบแล้ว)' : ''}`}
                     >
-                      <span className="relative z-10">{globalIndex + 1}</span>
-                      {/* Category color indicator */}
-                      <div className={`absolute bottom-0 left-0 right-0 h-1 rounded-b-xl opacity-70 ${categoryInfo?.darkColor || categoryInfo?.color || 'bg-gray-500'}`}></div>
-                      {/* Bookmark indicator */}
+                      {originalIndex + 1}
                       {isBookmarked && (
-                        <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full shadow-lg flex items-center justify-center ${
-                          darkMode ? 'bg-yellow-400' : 'bg-yellow-500'
-                        }`}>
-                          <span className="text-xs">★</span>
-                        </div>
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-xs shadow-md">
+                          📌
+                        </span>
+                      )}
+                      {categoryInfo && (
+                        <div className={`absolute bottom-0 left-0 right-0 h-1 rounded-b-xl ${darkMode ? categoryInfo.darkColor : categoryInfo.color}`}></div>
                       )}
                     </Button>
                   );
                 })}
               </div>
 
-              {/* Enhanced Legend */}
-              <div className={`p-5 rounded-xl border-2 transition-all duration-300 ${
-                darkMode 
-                  ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-600 shadow-slate-900/50' 
-                  : 'bg-gradient-to-br from-slate-50 to-white border-slate-200 shadow-slate-200/50'
+              <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-sm p-4 rounded-xl ${
+                darkMode ? 'bg-gray-700' : 'bg-gray-50'
               }`}>
-                <div className={`text-sm font-bold mb-4 flex items-center gap-2 ${
-                  darkMode ? 'text-slate-200' : 'text-slate-700'
-                }`}>
-                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                  คำอธิบายสัญลักษณ์
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-blue-600 rounded-lg shadow-sm"></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>ข้อปัจจุบัน</span>
                 </div>
-                <div className="grid grid-cols-1 gap-3 text-sm">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">●</span>
-                    </div>
-                    <span className={`font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>ข้อปัจจุบัน</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                    <span className={`font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>ตอบแล้ว</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-6 h-6 rounded-xl shadow-lg border-2 flex items-center justify-center ${
-                      darkMode 
-                        ? 'bg-gradient-to-br from-slate-600 to-slate-700 border-slate-500' 
-                        : 'bg-gradient-to-br from-white to-slate-100 border-slate-300'
-                    }`}>
-                      <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>○</span>
-                    </div>
-                    <span className={`font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>ยังไม่ตอบ</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full shadow-lg flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">★</span>
-                    </div>
-                    <span className={`font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>บุ๊กมาร์ก</span>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-lg shadow-sm"></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>ตอบแล้ว</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`w-5 h-5 rounded-lg shadow-sm border-2 ${
+                    darkMode ? 'bg-gray-600 border-gray-500' : 'bg-white border-gray-300'
+                  }`}></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>ยังไม่ตอบ</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-yellow-400 rounded-full shadow-sm"></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>บุ๊กมาร์ก</span>
                 </div>
               </div>
             </div>
@@ -678,77 +627,74 @@ export default function ExamPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Question Content */}
           <div className="lg:col-span-2">
-            <Card className={`shadow-2xl border-2 transition-all duration-300 ${
-              darkMode 
-                ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-600 shadow-slate-900/50' 
-                : 'bg-gradient-to-br from-white to-blue-50 border-blue-200 shadow-blue-100/50'
+            <Card className={`shadow-lg transition-colors ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'
             }`}>
-              <CardContent className="p-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="space-y-2">
+              <CardContent className="p-6">
+                {/* Question Header */}
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                  <div className="flex items-center space-x-3 flex-wrap">
                     <Badge 
                       variant="secondary" 
-                      className={`px-4 py-2 text-sm font-bold rounded-xl shadow-lg ${
-                        darkMode 
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' 
-                          : 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white'
+                      className={`px-4 py-2 text-sm font-semibold ${
+                        darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      ข้อ {currentQuestionIndex + 1} จาก {examQuestions.length}
+                      ข้อ {currentQuestionIndex + 1} / {examQuestions.length}
                     </Badge>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        categories.find(cat => cat.id === currentQuestion?.category)?.darkColor || 
-                        categories.find(cat => cat.id === currentQuestion?.category)?.color || 
-                        'bg-gray-500'
-                      }`}></div>
-                      <Badge 
-                        variant="outline" 
-                        className={`px-3 py-1 text-xs font-semibold rounded-lg border-2 ${
-                          darkMode 
-                            ? 'border-slate-500 text-slate-300 bg-slate-700/50' 
-                            : 'border-slate-300 text-slate-600 bg-white/80'
-                        }`}
-                      >
-                        {categories.find(cat => cat.id === currentQuestion?.category)?.name || currentQuestion?.category}
-                      </Badge>
-                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`px-4 py-2 text-sm font-medium border-2 transition-colors ${
+                        darkMode 
+                          ? 'text-blue-400 border-blue-500 bg-blue-500/10' 
+                          : 'text-primary-blue border-primary-blue bg-blue-50'
+                      }`}
+                    >
+                      {categories.find(cat => cat.id === currentQuestion.category)?.name || currentQuestion.category}
+                    </Badge>
+                    <Badge
+                      className={`px-4 py-2 text-sm font-medium border ${getDifficultyColor(currentQuestion.difficulty)}`}
+                    >
+                      {currentQuestion.difficulty}
+                    </Badge>
                   </div>
+
                   <div className="flex items-center space-x-3">
                     <Button
-                      variant="outline"
-                      onClick={() => toggleBookmark(currentQuestion?.id)}
-                      className={`px-5 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                        bookmarkedQuestions.includes(currentQuestion?.id || "")
-                          ? darkMode 
-                            ? 'border-yellow-400 text-yellow-300 bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 hover:from-yellow-800/40 hover:to-yellow-700/40' 
-                            : 'border-yellow-500 text-yellow-700 bg-gradient-to-r from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200'
+                      variant={bookmarkedQuestions.includes(currentQuestion.id) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleBookmark(currentQuestion.id)}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                        bookmarkedQuestions.includes(currentQuestion.id)
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-md transform scale-105'
                           : darkMode
-                            ? 'border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-yellow-500'
-                            : 'border-slate-300 text-slate-600 bg-white hover:bg-yellow-50 hover:border-yellow-400'
+                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      {bookmarkedQuestions.includes(currentQuestion?.id || "") ? "★" : "☆"} บุ๊กมาร์ก
+                      <span className="text-lg">{bookmarkedQuestions.includes(currentQuestion.id) ? "🔖" : "📑"}</span>
+                      <span>บุ๊กมาร์ก</span>
                     </Button>
 
                     <Button
                       variant="outline"
-                      onClick={() => setShowNavigationGrid(!showNavigationGrid)}
-                      className={`px-5 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                        darkMode 
-                          ? 'border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-blue-500' 
-                          : 'border-slate-300 text-slate-600 bg-white hover:bg-blue-50 hover:border-blue-400'
+                      size="sm"
+                      onClick={() => setShowNavigationGrid(true)}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                        darkMode
+                          ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      แผนที่ข้อสอบ
+                      <span className="text-lg">🗂️</span>
+                      <span>เลือกข้อสอบ</span>
                     </Button>
                   </div>
                 </div>
 
                 {/* Question Text */}
                 <div className={`p-6 rounded-xl mb-6 ${
-                  darkMode ? 'bg-gradient-to-br from-slate-700/50 to-slate-800/50' : 'bg-gradient-to-br from-white to-slate-50'
+                  darkMode ? 'bg-gray-700/50' : 'bg-gray-50'
                 }`}>
                   <h2 className={`text-xl font-medium leading-relaxed ${
                     darkMode ? 'text-gray-200' : 'text-gray-800'
@@ -758,170 +704,131 @@ export default function ExamPage() {
                 </div>
 
                 {/* Answer Options */}
-                <div className="space-y-4 mb-8">
-                  {currentQuestion?.options.map((option, index) => (
-                    <button
-                      key={index}
-                      className={`group w-full text-left p-5 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] shadow-lg ${
-                        answers[currentQuestion.id] === index
-                          ? darkMode 
-                            ? 'border-blue-400 bg-gradient-to-r from-blue-900/50 to-indigo-900/50 text-blue-200 shadow-blue-500/30' 
-                            : 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-800 shadow-blue-200/50'
-                          : darkMode
-                            ? 'border-slate-600 bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-200 hover:border-blue-500 hover:bg-gradient-to-r hover:from-slate-600/50 hover:to-slate-700/50 shadow-slate-900/30'
-                            : 'border-slate-300 bg-gradient-to-r from-white to-slate-50 text-slate-700 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 shadow-slate-200/50'
-                      }`}
-                      onClick={() => handleAnswerSelect(index)}
-                    >
-                      <div className="flex items-start space-x-4">
-                        <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${
-                          answers[currentQuestion.id] === index
-                            ? darkMode 
-                              ? 'border-blue-300 bg-gradient-to-br from-blue-400 to-blue-500 shadow-lg' 
-                              : 'border-blue-500 bg-gradient-to-br from-blue-500 to-indigo-500 shadow-lg'
-                            : darkMode
-                              ? 'border-slate-500 bg-gradient-to-br from-slate-600 to-slate-700 group-hover:border-blue-400'
-                              : 'border-slate-400 bg-gradient-to-br from-white to-slate-100 group-hover:border-blue-400'
-                        }`}>
-                          {answers[currentQuestion.id] === index ? (
-                            <div className="w-3 h-3 bg-white rounded-full shadow-sm"></div>
-                          ) : (
-                            <span className={`text-sm font-bold ${
-                              darkMode ? 'text-slate-300' : 'text-slate-600'
-                            }`}>
-                              {String.fromCharCode(65 + index)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <span className={`text-sm font-bold mb-1 block ${
-                            answers[currentQuestion.id] === index
-                              ? darkMode ? 'text-blue-300' : 'text-blue-700'
-                              : darkMode ? 'text-slate-300' : 'text-slate-600'
+                <div className="space-y-4">
+                  {currentQuestion.options.map((option, index) => {
+                    const isSelected = answers[currentQuestion.id] === index;
+                    const optionLabels = ['ก', 'ข', 'ค', 'ง'];
+
+                    return (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className={`answer-option w-full p-5 text-left h-auto justify-start rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                          isSelected 
+                            ? `border-primary-blue shadow-lg ${
+                                darkMode 
+                                  ? 'bg-blue-500/20 border-blue-400' 
+                                  : 'bg-primary-blue bg-opacity-10 border-primary-blue'
+                              }` 
+                            : `${
+                                darkMode 
+                                  ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-700/50' 
+                                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                              }`
+                        }`}
+                        onClick={() => handleAnswerSelect(index)}
+                      >
+                        <div className="flex items-center w-full">
+                          <span className={`w-10 h-10 text-sm font-bold rounded-full flex items-center justify-center mr-4 transition-all duration-300 ${
+                            isSelected 
+                              ? "bg-primary-blue text-white shadow-md transform scale-110" 
+                              : `${darkMode ? 'bg-gray-600 text-gray-200' : 'bg-secondary-gray text-gray-600'}`
                           }`}>
-                            ตัวเลือก {String.fromCharCode(65 + index)}
+                            {optionLabels[index]}
                           </span>
-                          <span className={`text-base font-medium leading-relaxed ${
-                            answers[currentQuestion.id] === index
-                              ? darkMode ? 'text-blue-200' : 'text-blue-800'
-                              : darkMode ? 'text-slate-200' : 'text-slate-700'
+                          <span className={`flex-1 text-base leading-relaxed transition-colors duration-300 ${
+                            isSelected 
+                              ? `${darkMode ? 'text-blue-300 font-medium' : 'text-primary-blue font-medium'}` 
+                              : `${darkMode ? 'text-gray-200' : 'text-gray-700'}`
                           }`}>
                             {option}
                           </span>
+                          {isSelected && (
+                            <div className="text-primary-blue text-xl ml-2">✓</div>
+                          )}
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </Button>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mt-6">
               <Button
-                variant="outline"
                 onClick={handlePreviousQuestion}
                 disabled={currentQuestionIndex === 0}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                  darkMode 
-                    ? 'border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-blue-500 disabled:opacity-50 disabled:transform-none' 
-                    : 'border-slate-300 text-slate-600 bg-white hover:bg-blue-50 hover:border-blue-400 disabled:opacity-50 disabled:transform-none'
-                }`}
+                className="px-6 py-3"
+                variant="outline"
               >
                 ← ข้อก่อนหน้า
               </Button>
 
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => toggleBookmark(currentQuestion?.id)}
-                  className={`px-5 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                    bookmarkedQuestions.includes(currentQuestion?.id || "")
-                      ? darkMode 
-                        ? 'border-yellow-400 text-yellow-300 bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 hover:from-yellow-800/40 hover:to-yellow-700/40' 
-                        : 'border-yellow-500 text-yellow-700 bg-gradient-to-r from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200'
-                      : darkMode
-                        ? 'border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-yellow-500'
-                        : 'border-slate-300 text-slate-600 bg-white hover:bg-yellow-50 hover:border-yellow-400'
-                  }`}
-                >
-                  {bookmarkedQuestions.includes(currentQuestion?.id || "") ? "★" : "☆"} บุ๊กมาร์ก
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNavigationGrid(!showNavigationGrid)}
-                  className={`px-5 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                    darkMode 
-                      ? 'border-slate-600 text-slate-300 bg-slate-700/50 hover:bg-slate-600 hover:border-blue-500' 
-                      : 'border-slate-300 text-slate-600 bg-white hover:bg-blue-50 hover:border-blue-400'
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  แผนที่ข้อสอบ
-                </Button>
+              <div className="text-center">
+                {/* Auto-save Status */}
+                <div className="text-xs mb-2">
+                  {autoSaveStatus === "saved" && (
+                    <span className="text-green-600">✓ บันทึกอัตโนมัติแล้ว</span>
+                  )}
+                  {autoSaveStatus === "saving" && (
+                    <span className="text-blue-600">💾 กำลังบันทึก...</span>
+                  )}
+                  {autoSaveStatus === "error" && (
+                    <span className="text-red-600">⚠️ บันทึกไม่สำเร็จ</span>
+                  )}
+                </div>
               </div>
 
-              <Button
-                onClick={() => setShowConfirmSubmit(true)} // Show confirmation dialog
-                className={`px-8 py-4 rounded-xl font-bold shadow-xl transition-all duration-300 transform hover:scale-105 ${
-                  isLastQuestion ? 'bg-gradient-to-br from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700' : ''
-                }`}
-                disabled={submitExamMutation.isPending}
-              >
-                {isLastQuestion ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🚀</span>
-                    ส่งข้อสอบ
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">➡️</span>
-                    ข้อถัดไป
-                  </div>
-                )}
-              </Button>
+              {!isLastQuestion ? (
+                <Button
+                  onClick={handleNextQuestion}
+                  className="px-6 py-3 bg-primary-blue hover:bg-blue-500"
+                >
+                  ข้อถัดไป →
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setShowConfirmSubmit(true)} // Show confirmation dialog
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700"
+                >
+                  ส่งข้อสอบ
+                </Button>
+              )}
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <Card className={`shadow-2xl border-2 transition-all duration-300 ${
-              darkMode 
-                ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-600 shadow-slate-900/50' 
-                : 'bg-gradient-to-br from-white to-blue-50 border-blue-200 shadow-blue-100/50'
+            <Card className={`sticky top-24 shadow-lg transition-colors ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'
             }`}>
               <CardContent className="p-6">
-                <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-                  สรุปข้อสอบ
-                </h3>
+                <h3 className="text-lg font-semibold mb-4">สรุปข้อสอบ</h3>
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>ตอบแล้ว</span>
-                    <span className={`font-bold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{answeredQuestions} / {examQuestions.length}</span>
+                    <span>ตอบแล้ว</span>
+                    <span className="font-medium">{answeredQuestions} / {examQuestions.length}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>บุ๊กมาร์ก</span>
-                    <span className={`font-bold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{bookmarkedQuestions.length}</span>
+                    <span>บุ๊กมาร์ก</span>
+                    <span className="font-medium">{bookmarkedQuestions.length}</span>
                   </div>
                 </div>
-
+                
                 <div className="mb-4">
                   <Button
                     onClick={() => setShowNavigationGrid(true)}
-                    className="w-full px-6 py-3 rounded-xl font-bold shadow-lg"
+                    className="w-full bg-primary-blue hover:bg-blue-500"
                     size="sm"
                   >
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    แผนที่ข้อสอบ
+                    🗂️ เลือกข้อสอบ
                   </Button>
                 </div>
 
                 {/* Quick Navigation */}
                 <div>
-                  <h4 className={`text-sm font-bold mb-3 ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                    นำทางด่วน
-                  </h4>
+                  <h4 className="text-sm font-medium mb-3">นำทางด่วน</h4>
                   <div className="grid grid-cols-5 gap-1 max-h-60 overflow-y-auto">
                     {examQuestions.map((question, index) => {
                       const isAnswered = answers[question.id] !== undefined;
@@ -937,12 +844,12 @@ export default function ExamPage() {
                           className={`
                             h-8 text-xs p-0 min-w-0
                             ${isCurrent
-                              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg ring-2 ring-blue-400"
+                              ? "bg-blue-600 text-white border-blue-600"
                               : isAnswered
-                                ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg ring-1 ring-green-500"
-                                : `${darkMode ? "bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600 text-slate-300" : "bg-white border-slate-300 text-slate-700"} hover:bg-blue-50 hover:border-blue-300`
+                                ? "bg-green-500 text-white border-green-500"
+                                : "bg-white text-gray-700 border-gray-300"
                             }
-                            ${isBookmarked ? `ring-1 ${darkMode ? "ring-yellow-400" : "ring-yellow-500"}` : ""}
+                            ${isBookmarked ? "ring-1 ring-yellow-400" : ""}
                           `}
                         >
                           {index + 1}
