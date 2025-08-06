@@ -48,3 +48,10 @@ export interface ImportResult {
 
 export type ExamFilter = "all" | "correct" | "incorrect" | "bookmarked";
 export type AutoSaveStatus = "saved" | "saving" | "error";
+
+export interface ExamConfig {
+  examSetId?: string;
+  customCategories?: Record<string, number>;
+  numberOfQuestions: number;
+  duration: number;
+}

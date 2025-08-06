@@ -79,21 +79,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mock exam endpoint
   app.post("/api/mock-exam", async (req, res) => {
     try {
-      const config = examConfigSchema.parse(req.body);
-      let questions;
+      const { examSetId, customCategories } = req.body;
       
-      if (config.type === "full") {
-        questions = await storage.getRandomQuestions(150);
+      let questions;
+      if (examSetId) {
+        const examSet = await storage.getExamSet(examSetId);
+        if (!examSet) {
+          return res.status(404).json({ message: "Exam set not found" });
+        }
+        // คำนวณจำนวนข้อสอบรวมและจำกัดไม่เกิน 150
+        const totalQuestions = Object.values(examSet.categoryDistribution).reduce((sum, count) => sum + count, 0);
+        const limitedTotal = Math.min(totalQuestions, 150);
+        
+        // ปรับสัดส่วนถ้าเกิน 150
+        let distribution = examSet.categoryDistribution;
+        if (totalQuestions > 150) {
+          const ratio = 150 / totalQuestions;
+          distribution = {};
+          for (const [category, count] of Object.entries(examSet.categoryDistribution)) {
+            distribution[category] = Math.floor(count * ratio);
+          }
+          // ปรับให้รวมเป็น 150 พอดี
+          const currentTotal = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+          if (currentTotal < 150) {
+            const categories = Object.keys(distribution);
+            const remaining = 150 - currentTotal;
+            for (let i = 0; i < remaining; i++) {
+              const category = categories[i % categories.length];
+              distribution[category]++;
+            }
+          }
+        }
+        
+        questions = await storage.getRandomQuestions(limitedTotal, distribution);
+      } else if (customCategories) {
+        const totalQuestions = Object.values(customCategories).reduce((sum, count) => sum + (count as number), 0);
+        if (totalQuestions > 150) {
+          return res.status(400).json({ message: "จำนวนข้อสอบต้องไม่เกิน 150 ข้อ" });
+        }
+        questions = await storage.getRandomQuestions(totalQuestions, customCategories);
       } else {
-        const totalQuestions = Object.values(config.categories || {}).reduce((sum, count) => sum + count, 0);
-        questions = await storage.getRandomQuestions(totalQuestions, config.categories);
+        // Default exam with standard distribution (150 questions total)
+        const defaultDistribution = {
+          "ความสามารถทั่วไป": 30,
+          "ภาษาไทย": 25,
+          "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)": 25,
+          "ภาษาอังกฤษ": 30,
+          "สังคม วัฒนธรรม จริยธรรม และอาเซียน": 20,
+          "กฎหมายที่ประชาชนควรรู้": 20
+        };
+        questions = await storage.getRandomQuestions(150, defaultDistribution);
       }
       
       res.json(questions);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid exam configuration", errors: error.errors });
-      }
       res.status(500).json({ message: "Failed to generate mock exam" });
     }
   });
@@ -321,66 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Updated mock exam endpoint to use exam sets
-  app.post("/api/mock-exam", async (req, res) => {
-    try {
-      const { examSetId, customCategories } = req.body;
-      
-      let questions;
-      if (examSetId) {
-        const examSet = await storage.getExamSet(examSetId);
-        if (!examSet) {
-          return res.status(404).json({ message: "Exam set not found" });
-        }
-        // คำนวณจำนวนข้อสอบรวมและจำกัดไม่เกิน 150
-        const totalQuestions = Object.values(examSet.categoryDistribution).reduce((sum, count) => sum + count, 0);
-        const limitedTotal = Math.min(totalQuestions, 150);
-        
-        // ปรับสัดส่วนถ้าเกิน 150
-        let distribution = examSet.categoryDistribution;
-        if (totalQuestions > 150) {
-          const ratio = 150 / totalQuestions;
-          distribution = {};
-          for (const [category, count] of Object.entries(examSet.categoryDistribution)) {
-            distribution[category] = Math.floor(count * ratio);
-          }
-          // ปรับให้รวมเป็น 150 พอดี
-          const currentTotal = Object.values(distribution).reduce((sum, count) => sum + count, 0);
-          if (currentTotal < 150) {
-            const categories = Object.keys(distribution);
-            const remaining = 150 - currentTotal;
-            for (let i = 0; i < remaining; i++) {
-              const category = categories[i % categories.length];
-              distribution[category]++;
-            }
-          }
-        }
-        
-        questions = await storage.getRandomQuestions(limitedTotal, distribution);
-      } else if (customCategories) {
-        const totalQuestions = Object.values(customCategories).reduce((sum, count) => sum + (count as number), 0);
-        if (totalQuestions > 150) {
-          return res.status(400).json({ message: "จำนวนข้อสอบต้องไม่เกิน 150 ข้อ" });
-        }
-        questions = await storage.getRandomQuestions(totalQuestions, customCategories);
-      } else {
-        // Default exam with standard distribution (150 questions total)
-        const defaultDistribution = {
-          "ความสามารถทั่วไป": 30,
-          "ภาษาไทย": 25,
-          "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)": 25,
-          "ภาษาอังกฤษ": 30,
-          "สังคม วัฒนธรรม จริยธรรม และอาเซียน": 20,
-          "กฎหมายที่ประชาชนควรรู้": 20
-        };
-        questions = await storage.getRandomQuestions(150, defaultDistribution);
-      }
-      
-      res.json(questions);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to generate mock exam" });
-    }
-  });
+  
 
   const httpServer = createServer(app);
   return httpServer;

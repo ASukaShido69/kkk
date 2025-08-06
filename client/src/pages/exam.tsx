@@ -66,19 +66,17 @@ export default function ExamPage() {
   }, []);
 
   const generateExamMutation = useMutation({
-    mutationFn: async (config: ExamConfig) => {
-      // The API should handle the question limit internally, but we also ensure it here.
-      const response = await apiRequest("POST", "/api/mock-exam", { ...config, numberOfQuestions: Math.min(config.numberOfQuestions, 150) });
+    mutationFn: async (config: any) => {
+      const response = await apiRequest("POST", "/api/mock-exam", config);
       if (!response.ok) {
         throw new Error("Failed to generate exam");
       }
       return response.json();
     },
     onSuccess: (questions: Question[]) => {
-      setExamQuestions(questions);
+      const limitedQuestions = questions.slice(0, 150);
+      setExamQuestions(limitedQuestions);
       setStartTime(new Date());
-      // Ensure we don't exceed 150 questions if the backend returns more
-      setExamQuestions(prevQuestions => prevQuestions.slice(0, 150));
     },
     onError: (error) => {
       console.error("Error generating exam:", error);
@@ -91,7 +89,7 @@ export default function ExamPage() {
     },
   });
 
-  const generateExam = (config: ExamConfig) => {
+  const generateExam = (config: any) => {
     generateExamMutation.mutate(config);
   };
 
@@ -324,7 +322,7 @@ export default function ExamPage() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-10 sm:grid-cols-15 md:grid-cols-20 gap-2 mb-4">
+              <div className="grid grid-cols-10 gap-2 mb-4">
                 {examQuestions.map((question, index) => {
                   const isAnswered = answers[question.id] !== undefined;
                   const isBookmarked = bookmarkedQuestions.includes(question.id);
@@ -333,24 +331,24 @@ export default function ExamPage() {
                   return (
                     <Button
                       key={question.id}
-                      variant={isCurrent ? "default" : "outline"}
+                      variant="outline"
                       size="sm"
                       onClick={() => jumpToQuestion(index)}
                       className={`
-                        relative min-w-[40px] h-10 text-sm font-medium
+                        relative min-w-[40px] h-10 text-sm font-medium transition-all
                         ${isCurrent
-                          ? "bg-primary-blue text-white"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-md"
                           : isAnswered
-                            ? "bg-green-100 text-green-800 border-green-300"
-                            : "bg-gray-50 text-gray-600 border-gray-300"
+                            ? "bg-green-500 text-white border-green-500 hover:bg-green-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         }
-                        ${isBookmarked ? "ring-2 ring-yellow-400" : ""}
+                        ${isBookmarked ? "ring-2 ring-yellow-400 ring-offset-1" : ""}
                       `}
                     >
                       {index + 1}
                       {isBookmarked && (
-                        <span className="absolute -top-1 -right-1 text-yellow-500 text-xs">
-                          📌
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center">
+                          <span className="text-xs">📌</span>
                         </span>
                       )}
                     </Button>
@@ -360,19 +358,19 @@ export default function ExamPage() {
 
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-primary-blue rounded"></div>
+                  <div className="w-4 h-4 bg-blue-600 rounded"></div>
                   <span>ข้อปัจจุบัน</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                  <div className="w-4 h-4 bg-green-500 rounded"></div>
                   <span>ตอบแล้ว</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-gray-50 border border-gray-300 rounded"></div>
+                  <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
                   <span>ยังไม่ตอบ</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-yellow-500">📌</span>
+                  <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
                   <span>บุ๊กมาร์ก</span>
                 </div>
               </div>
@@ -508,18 +506,12 @@ export default function ExamPage() {
             </div>
           </div>
 
-          {/* Sidebar (e.g., Timer, Summary) - Optional, kept for context */}
-          <div className="lg:col-span-1 lg:block">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
             <Card className="sticky top-24">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">สรุปข้อสอบ</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>เวลาที่ใช้</span>
-                    <span className="font-medium">
-                       {/* Timer component already handles display */}
-                    </span>
-                  </div>
+                <div className="space-y-3 mb-6">
                   <div className="flex justify-between items-center">
                     <span>ตอบแล้ว</span>
                     <span className="font-medium">{answeredQuestions} / {examQuestions.length}</span>
@@ -527,6 +519,49 @@ export default function ExamPage() {
                   <div className="flex justify-between items-center">
                     <span>บุ๊กมาร์ก</span>
                     <span className="font-medium">{bookmarkedQuestions.length}</span>
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <Button
+                    onClick={() => setShowNavigationGrid(true)}
+                    className="w-full bg-primary-blue hover:bg-blue-500"
+                    size="sm"
+                  >
+                    🗂️ เลือกข้อสอบ
+                  </Button>
+                </div>
+
+                {/* Quick Navigation */}
+                <div>
+                  <h4 className="text-sm font-medium mb-3">นำทางด่วน</h4>
+                  <div className="grid grid-cols-5 gap-1 max-h-60 overflow-y-auto">
+                    {examQuestions.map((question, index) => {
+                      const isAnswered = answers[question.id] !== undefined;
+                      const isBookmarked = bookmarkedQuestions.includes(question.id);
+                      const isCurrent = index === currentQuestionIndex;
+
+                      return (
+                        <Button
+                          key={question.id}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentQuestionIndex(index)}
+                          className={`
+                            h-8 text-xs p-0 min-w-0
+                            ${isCurrent
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : isAnswered
+                                ? "bg-green-500 text-white border-green-500"
+                                : "bg-white text-gray-700 border-gray-300"
+                            }
+                            ${isBookmarked ? "ring-1 ring-yellow-400" : ""}
+                          `}
+                        >
+                          {index + 1}
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>

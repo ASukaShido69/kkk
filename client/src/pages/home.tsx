@@ -75,23 +75,31 @@ export default function HomePage() {
 
     // จำกัดข้อสอบไม่เกิน 150 ข้อ
     let totalQuestions = 0;
-    if (examType === "custom") {
-      totalQuestions = totalCustomQuestions;
-      if (totalQuestions > 150) {
-        toast({
-          title: "จำนวนข้อสอบเกินขีดจำกัด",
-          description: "จำนวนข้อสอบรวมต้องไม่เกิน 150 ข้อ",
-          variant: "destructive",
-        });
-        return;
+    if (examType === "examSet") {
+      const examSet = examSets?.find(set => set.id === selectedExamSetId);
+      if (examSet) {
+        totalQuestions = Object.values(examSet.categoryDistribution).reduce((sum, count) => sum + count, 0);
       }
+    } else {
+      totalQuestions = totalCustomQuestions;
+    }
+
+    if (totalQuestions > 150) {
+      toast({
+        title: "จำนวนข้อสอบเกินขีดจำกัด",
+        description: "จำนวนข้อสอบต้องไม่เกิน 150 ข้อ",
+        variant: "destructive",
+      });
+      return;
     }
 
     const config = {
       examSetId: examType === "examSet" ? selectedExamSetId : undefined,
       customCategories: examType === "custom" ? customConfig : undefined,
+      numberOfQuestions: Math.min(totalQuestions, 150),
+      duration: 3 * 60 * 60, // 3 hours in seconds
     };
-    
+
     // บันทึกการตั้งค่าการสอบและไปหน้าสอบ
     localStorage.setItem("examConfig", JSON.stringify(config));
     setLocation("/exam");
@@ -245,7 +253,7 @@ export default function HomePage() {
                           </Select>
                         </div>
                       ))}
-                      
+
                       {totalCustomQuestions > 0 && (
                         <div className="bg-green-50 rounded-xl p-4">
                           <div className="flex justify-between items-center">
