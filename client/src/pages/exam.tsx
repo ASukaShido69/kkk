@@ -5,22 +5,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ExamTimer from "@/components/exam-timer";
+import { Moon, Sun, BookOpen, Filter } from "lucide-react";
 import type { Question, ExamConfig } from "@/lib/types";
 
 // Placeholder for exam duration (in seconds) - assuming 3 hours
 const EXAM_DURATION = 3 * 60 * 60;
 
 const categories = [
-  { id: "ความสามารถทั่วไป", name: "ความสามารถทั่วไป", color: "bg-blue-500" },
-  { id: "ภาษาไทย", name: "ภาษาไทย", color: "bg-green-500" },
-  { id: "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)", name: "คอมพิวเตอร์", color: "bg-purple-500" },
-  { id: "ภาษาอังกฤษ", name: "ภาษาอังกฤษ", color: "bg-red-500" },
-  { id: "สังคม วัฒนธรรม จริยธรรม และอาเซียน", name: "สังคม วัฒนธรรม", color: "bg-yellow-500" },
-  { id: "กฎหมายที่ประชาชนควรรู้", name: "กฎหมาย", color: "bg-indigo-500" },
+  { id: "ความสามารถทั่วไป", name: "ความสามารถทั่วไป", color: "bg-blue-500", darkColor: "bg-blue-600" },
+  { id: "ภาษาไทย", name: "ภาษาไทย", color: "bg-green-500", darkColor: "bg-green-600" },
+  { id: "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)", name: "คอมพิวเตอร์", color: "bg-purple-500", darkColor: "bg-purple-600" },
+  { id: "ภาษาอังกฤษ", name: "ภาษาอังกฤษ", color: "bg-red-500", darkColor: "bg-red-600" },
+  { id: "สังคม วัฒนธรรม จริยธรรม และอาเซียน", name: "สังคม วัฒนธรรม", color: "bg-yellow-500", darkColor: "bg-yellow-600" },
+  { id: "กฎหมายที่ประชาชนควรรู้", name: "กฎหมาย", color: "bg-indigo-500", darkColor: "bg-indigo-600" },
 ];
 
 export default function ExamPage() {
@@ -39,21 +41,47 @@ export default function ExamPage() {
   const [examQuestions, setExamQuestions] = useState<Question[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | "error">("saved");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Dark mode effect
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   // Helper function to determine difficulty color
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case "ง่าย":
-      case "easy":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "ปานกลาง":
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "ยาก":
-      case "hard":
-        return "bg-red-100 text-red-800 border-red-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+    if (darkMode) {
+      switch (difficulty.toLowerCase()) {
+        case "ง่าย":
+        case "easy":
+          return "bg-green-800 text-green-200 border-green-600";
+        case "ปานกลาง":
+        case "medium":
+          return "bg-yellow-800 text-yellow-200 border-yellow-600";
+        case "ยาก":
+        case "hard":
+          return "bg-red-800 text-red-200 border-red-600";
+        default:
+          return "bg-gray-700 text-gray-200 border-gray-500";
+      }
+    } else {
+      switch (difficulty.toLowerCase()) {
+        case "ง่าย":
+        case "easy":
+          return "bg-green-100 text-green-800 border-green-300";
+        case "ปานกลาง":
+        case "medium":
+          return "bg-yellow-100 text-yellow-800 border-yellow-300";
+        case "ยาก":
+        case "hard":
+          return "bg-red-100 text-red-800 border-red-300";
+        default:
+          return "bg-gray-100 text-gray-800 border-gray-300";
+      }
     }
   };
 
@@ -336,33 +364,68 @@ export default function ExamPage() {
   };
 
   return (
-    <div className="min-h-screen bg-primary-bg">
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark bg-gray-900' : 'bg-primary-bg'}`}>
       {/* Exam Header */}
-      <div className="bg-white border-b border-secondary-gray sticky top-0 z-10">
+      <div className={`border-b sticky top-0 z-10 backdrop-blur-sm transition-colors duration-300 ${
+        darkMode 
+          ? 'bg-gray-800/95 border-gray-700' 
+          : 'bg-white/95 border-secondary-gray'
+      }`}>
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-lg font-medium text-gray-800">
-              ข้อที่ <span className="text-primary-blue font-bold">{currentQuestionIndex + 1}</span> จาก{" "}
-              <span>{examQuestions.length}</span>
+            <div className={`text-lg font-medium flex items-center gap-3 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+              <BookOpen className="w-5 h-5 text-primary-blue" />
+              ข้อที่ <span className="text-primary-blue font-bold text-xl">{currentQuestionIndex + 1}</span> จาก{" "}
+              <span className="font-semibold">{examQuestions.length}</span>
             </div>
-            <ExamTimer
-              duration={examConfig?.duration || EXAM_DURATION} // Use duration from config or default
-              onTimeUp={handleTimeUp}
-              startTime={startTime}
-            />
+            <div className="flex items-center gap-4">
+              {/* Dark Mode Toggle */}
+              <div className="flex items-center gap-2">
+                <Sun className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-yellow-500'}`} />
+                <Switch
+                  checked={darkMode}
+                  onCheckedChange={setDarkMode}
+                  className="data-[state=checked]:bg-gray-600"
+                />
+                <Moon className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-gray-400'}`} />
+              </div>
+              <ExamTimer
+                duration={examConfig?.duration || EXAM_DURATION}
+                onTimeUp={handleTimeUp}
+                startTime={startTime}
+              />
+            </div>
           </div>
 
-          {/* Category Filter */}
+          {/* Enhanced Category Filter */}
           <div className="mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Filter className={`w-4 h-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+              <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                กรองตามวิชา:
+              </span>
+            </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-64">
+              <SelectTrigger className={`w-80 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200' : ''}`}>
                 <SelectValue placeholder="เลือกวิชา" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">ทุกวิชา</SelectItem>
+              <SelectContent className={darkMode ? 'bg-gray-700 border-gray-600' : ''}>
+                <SelectItem value="all" className={darkMode ? 'text-gray-200 focus:bg-gray-600' : ''}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                    ทุกวิชา
+                  </div>
+                </SelectItem>
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
+                  <SelectItem 
+                    key={category.id} 
+                    value={category.id}
+                    className={darkMode ? 'text-gray-200 focus:bg-gray-600' : ''}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 ${darkMode ? category.darkColor : category.color} rounded-full`}></div>
+                      {category.name}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -370,27 +433,46 @@ export default function ExamPage() {
           </div>
 
           {/* Overall Progress Bar */}
-          <Progress value={progress} className="w-full h-2 mb-4" />
+          <div className="mb-4">
+            <div className={`flex items-center justify-between text-xs mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <span>ความคืบหน้าโดยรวม</span>
+              <span>{progress.toFixed(1)}%</span>
+            </div>
+            <Progress value={progress} className={`w-full h-3 ${darkMode ? 'bg-gray-700' : ''}`} />
+          </div>
           
-          {/* Category Progress Bars */}
-          <div className="space-y-2 mb-2">
+          {/* Enhanced Category Progress Bars */}
+          <div className="space-y-3 mb-4">
+            <h4 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              ความคืบหน้าตามวิชา
+            </h4>
             {Object.entries(getCategoryProgress()).map(([categoryId, stats]) => {
               const categoryInfo = categories.find(cat => cat.id === categoryId);
               const categoryProgress = (stats.answered / stats.total) * 100;
               
               return (
-                <div key={categoryId} className="flex items-center space-x-3">
-                  <div className="w-32 text-xs text-gray-600 truncate">
-                    {categoryInfo?.name || categoryId}
+                <div key={categoryId} className={`rounded-lg p-3 transition-colors ${
+                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${darkMode ? categoryInfo?.darkColor : categoryInfo?.color || stats.color}`}></div>
+                      <span className={`text-xs font-medium truncate ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                        {categoryInfo?.name || categoryId}
+                      </span>
+                    </div>
+                    <div className={`text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {stats.answered}/{stats.total}
+                    </div>
                   </div>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div className={`w-full rounded-full h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                     <div 
-                      className={`h-2 rounded-full ${stats.color}`}
+                      className={`h-2 rounded-full transition-all duration-500 ${darkMode ? categoryInfo?.darkColor : categoryInfo?.color || stats.color}`}
                       style={{ width: `${categoryProgress}%` }}
                     ></div>
                   </div>
-                  <div className="text-xs text-gray-600 w-16">
-                    {stats.answered}/{stats.total}
+                  <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {categoryProgress.toFixed(1)}% เสร็จสิ้น
                   </div>
                 </div>
               );
@@ -407,24 +489,34 @@ export default function ExamPage() {
       <main className="max-w-6xl mx-auto px-4 py-6">
         {/* Navigation Grid Modal */}
         {showNavigationGrid && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">เลือกข้อสอบ</h3>
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
+            <div className={`rounded-2xl p-6 max-w-5xl w-full mx-4 max-h-[85vh] overflow-auto shadow-2xl border transition-colors ${
+              darkMode 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-gray-200'
+            }`}>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <BookOpen className={`w-6 h-6 ${darkMode ? 'text-blue-400' : 'text-primary-blue'}`} />
+                  <h3 className={`text-xl font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                    เลือกข้อสอบ
+                  </h3>
+                </div>
                 <Button
                   variant="ghost"
                   onClick={() => setShowNavigationGrid(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className={`text-2xl font-light ${darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   ✕
                 </Button>
               </div>
 
-              <div className="grid grid-cols-10 gap-2 mb-4">
+              <div className="grid grid-cols-10 gap-3 mb-6">
                 {examQuestions.map((question, index) => {
                   const isAnswered = answers[question.id] !== undefined;
                   const isBookmarked = bookmarkedQuestions.includes(question.id);
                   const isCurrent = index === currentQuestionIndex;
+                  const categoryInfo = categories.find(cat => cat.id === question.category);
 
                   return (
                     <Button
@@ -433,43 +525,51 @@ export default function ExamPage() {
                       size="sm"
                       onClick={() => jumpToQuestion(index)}
                       className={`
-                        relative min-w-[40px] h-10 text-sm font-medium transition-all
+                        relative min-w-[45px] h-12 text-sm font-bold transition-all duration-300 rounded-xl
                         ${isCurrent
-                          ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                          ? `${darkMode ? 'bg-blue-600 hover:bg-blue-700 border-blue-500' : 'bg-blue-600 hover:bg-blue-700 border-blue-600'} text-white shadow-lg transform scale-105`
                           : isAnswered
-                            ? "bg-green-500 text-white border-green-500 hover:bg-green-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            ? `${darkMode ? 'bg-green-600 hover:bg-green-700 border-green-500' : 'bg-green-500 hover:bg-green-600 border-green-500'} text-white`
+                            : `${darkMode ? 'bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-200' : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'}`
                         }
-                        ${isBookmarked ? "ring-2 ring-yellow-400 ring-offset-1" : ""}
+                        ${isBookmarked ? (darkMode ? "ring-2 ring-yellow-500 ring-offset-2 ring-offset-gray-800" : "ring-2 ring-yellow-400 ring-offset-2") : ""}
                       `}
+                      title={`ข้อ ${index + 1} - ${categoryInfo?.name || question.category}${isBookmarked ? ' (บุ๊กมาร์ก)' : ''}${isAnswered ? ' (ตอบแล้ว)' : ''}`}
                     >
                       {index + 1}
                       {isBookmarked && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center">
-                          <span className="text-xs">📌</span>
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-xs shadow-md">
+                          📌
                         </span>
+                      )}
+                      {categoryInfo && (
+                        <div className={`absolute bottom-0 left-0 right-0 h-1 rounded-b-xl ${darkMode ? categoryInfo.darkColor : categoryInfo.color}`}></div>
                       )}
                     </Button>
                   );
                 })}
               </div>
 
-              <div className="flex flex-wrap gap-4 text-sm">
+              <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-sm p-4 rounded-xl ${
+                darkMode ? 'bg-gray-700' : 'bg-gray-50'
+              }`}>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-blue-600 rounded"></div>
-                  <span>ข้อปัจจุบัน</span>
+                  <div className="w-5 h-5 bg-blue-600 rounded-lg shadow-sm"></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>ข้อปัจจุบัน</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-green-500 rounded"></div>
-                  <span>ตอบแล้ว</span>
+                  <div className="w-5 h-5 bg-green-500 rounded-lg shadow-sm"></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>ตอบแล้ว</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
-                  <span>ยังไม่ตอบ</span>
+                  <div className={`w-5 h-5 rounded-lg shadow-sm border-2 ${
+                    darkMode ? 'bg-gray-600 border-gray-500' : 'bg-white border-gray-300'
+                  }`}></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>ยังไม่ตอบ</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
-                  <span>บุ๊กมาร์ก</span>
+                  <div className="w-5 h-5 bg-yellow-400 rounded-full shadow-sm"></div>
+                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>บุ๊กมาร์ก</span>
                 </div>
               </div>
             </div>
@@ -479,35 +579,52 @@ export default function ExamPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Question Content */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className={`shadow-lg transition-colors ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'
+            }`}>
               <CardContent className="p-6">
                 {/* Question Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <Badge variant="secondary" className="px-3 py-1">
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                  <div className="flex items-center space-x-3 flex-wrap">
+                    <Badge 
+                      variant="secondary" 
+                      className={`px-4 py-2 text-sm font-semibold ${
+                        darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       ข้อ {currentQuestionIndex + 1} / {examQuestions.length}
                     </Badge>
                     <Badge
                       variant="outline"
-                      className="px-3 py-1 text-primary-blue border-primary-blue"
+                      className={`px-4 py-2 text-sm font-medium border-2 transition-colors ${
+                        darkMode 
+                          ? 'text-blue-400 border-blue-500 bg-blue-500/10' 
+                          : 'text-primary-blue border-primary-blue bg-blue-50'
+                      }`}
                     >
-                      {currentQuestion.category}
+                      {categories.find(cat => cat.id === currentQuestion.category)?.name || currentQuestion.category}
                     </Badge>
                     <Badge
-                      className={`px-3 py-1 ${getDifficultyColor(currentQuestion.difficulty)}`}
+                      className={`px-4 py-2 text-sm font-medium border ${getDifficultyColor(currentQuestion.difficulty)}`}
                     >
                       {currentQuestion.difficulty}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
                     <Button
                       variant={bookmarkedQuestions.includes(currentQuestion.id) ? "default" : "outline"}
                       size="sm"
                       onClick={() => toggleBookmark(currentQuestion.id)}
-                      className="flex items-center space-x-2"
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                        bookmarkedQuestions.includes(currentQuestion.id)
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-md transform scale-105'
+                          : darkMode
+                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
                     >
-                      <span>{bookmarkedQuestions.includes(currentQuestion.id) ? "🔖" : "📑"}</span>
+                      <span className="text-lg">{bookmarkedQuestions.includes(currentQuestion.id) ? "🔖" : "📑"}</span>
                       <span>บุ๊กมาร์ก</span>
                     </Button>
 
@@ -515,21 +632,31 @@ export default function ExamPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowNavigationGrid(true)}
-                      className="flex items-center space-x-2"
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                        darkMode
+                          ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
                     >
-                      <span>🗂️</span>
+                      <span className="text-lg">🗂️</span>
                       <span>เลือกข้อสอบ</span>
                     </Button>
                   </div>
                 </div>
 
                 {/* Question Text */}
-                <h2 className="text-xl font-medium text-gray-800 mb-6 leading-relaxed">
-                  {currentQuestion.questionText}
-                </h2>
+                <div className={`p-6 rounded-xl mb-6 ${
+                  darkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                }`}>
+                  <h2 className={`text-xl font-medium leading-relaxed ${
+                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                  }`}>
+                    {currentQuestion.questionText}
+                  </h2>
+                </div>
 
                 {/* Answer Options */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {currentQuestion.options.map((option, index) => {
                     const isSelected = answers[currentQuestion.id] === index;
                     const optionLabels = ['ก', 'ข', 'ค', 'ง'];
@@ -538,20 +665,39 @@ export default function ExamPage() {
                       <Button
                         key={index}
                         variant="outline"
-                        className={`answer-option w-full p-4 text-left h-auto justify-start ${
-                          isSelected ? "border-primary-blue bg-primary-blue bg-opacity-10" : ""
+                        className={`answer-option w-full p-5 text-left h-auto justify-start rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                          isSelected 
+                            ? `border-primary-blue shadow-lg ${
+                                darkMode 
+                                  ? 'bg-blue-500/20 border-blue-400' 
+                                  : 'bg-primary-blue bg-opacity-10 border-primary-blue'
+                              }` 
+                            : `${
+                                darkMode 
+                                  ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-700/50' 
+                                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                              }`
                         }`}
                         onClick={() => handleAnswerSelect(index)}
                       >
-                        <div className="flex items-center">
-                          <span className={`w-8 h-8 text-white text-sm font-medium rounded-full flex items-center justify-center mr-4 ${
-                            isSelected ? "bg-primary-blue" : "bg-secondary-gray"
+                        <div className="flex items-center w-full">
+                          <span className={`w-10 h-10 text-sm font-bold rounded-full flex items-center justify-center mr-4 transition-all duration-300 ${
+                            isSelected 
+                              ? "bg-primary-blue text-white shadow-md transform scale-110" 
+                              : `${darkMode ? 'bg-gray-600 text-gray-200' : 'bg-secondary-gray text-gray-600'}`
                           }`}>
                             {optionLabels[index]}
                           </span>
-                          <span className={isSelected ? "text-primary-blue font-medium" : ""}>
+                          <span className={`flex-1 text-base leading-relaxed transition-colors duration-300 ${
+                            isSelected 
+                              ? `${darkMode ? 'text-blue-300 font-medium' : 'text-primary-blue font-medium'}` 
+                              : `${darkMode ? 'text-gray-200' : 'text-gray-700'}`
+                          }`}>
                             {option}
                           </span>
+                          {isSelected && (
+                            <div className="text-primary-blue text-xl ml-2">✓</div>
+                          )}
                         </div>
                       </Button>
                     );
@@ -606,7 +752,9 @@ export default function ExamPage() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24">
+            <Card className={`sticky top-24 shadow-lg transition-colors ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'
+            }`}>
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">สรุปข้อสอบ</h3>
                 <div className="space-y-3 mb-6">
@@ -670,19 +818,49 @@ export default function ExamPage() {
 
       {/* Submit Confirmation Modal */}
       {showConfirmSubmit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="pt-6 text-center">
-              <h2 className="text-xl font-bold mb-4">ยืนยันการส่งข้อสอบ</h2>
-              <p className="text-gray-600 mb-6">
-                คุณได้ตอบคำถาม {answeredQuestions} จาก {examQuestions.length} ข้อแล้ว ต้องการส่งข้อสอบหรือไม่?
-              </p>
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
+          <Card className={`w-full max-w-lg mx-4 shadow-2xl border transition-colors ${
+            darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <CardContent className="pt-8 pb-6 text-center">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">📝</span>
+                </div>
+                <h2 className={`text-2xl font-bold mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                  ยืนยันการส่งข้อสอบ
+                </h2>
+                <div className={`text-base leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <p className="mb-2">
+                    คุณได้ตอบคำถาม <span className="font-semibold text-green-600">{answeredQuestions}</span> จาก{" "}
+                    <span className="font-semibold">{examQuestions.length}</span> ข้อแล้ว
+                  </p>
+                  <p>ต้องการส่งข้อสอบหรือไม่?</p>
+                </div>
+              </div>
               <div className="flex justify-center space-x-4">
-                <Button variant="outline" onClick={() => setShowConfirmSubmit(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowConfirmSubmit(false)}
+                  className={`px-6 py-3 rounded-xl font-medium ${
+                    darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''
+                  }`}
+                >
                   ยกเลิก
                 </Button>
-                <Button onClick={handleSubmitExam} disabled={submitExamMutation.isPending} className="bg-green-600 hover:bg-green-700">
-                  {submitExamMutation.isPending ? "กำลังส่ง..." : "ส่งข้อสอบ"}
+                <Button 
+                  onClick={handleSubmitExam} 
+                  disabled={submitExamMutation.isPending} 
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-xl font-medium text-white shadow-lg disabled:opacity-50"
+                >
+                  {submitExamMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      กำลังส่ง...
+                    </div>
+                  ) : (
+                    "ส่งข้อสอบ"
+                  )}
                 </Button>
               </div>
             </CardContent>

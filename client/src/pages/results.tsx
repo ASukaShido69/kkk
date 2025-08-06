@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -23,11 +22,11 @@ export default function ResultsPage() {
   useEffect(() => {
     // Load complete exam data from localStorage
     const lastExamData = localStorage.getItem("lastExamData");
-    
+
     if (lastExamData) {
       const examData = JSON.parse(lastExamData);
       setScore(examData.score);
-      
+
       // Process questions for review
       const questions: QuestionReview[] = examData.questions.map((q: Question) => ({
         ...q,
@@ -40,7 +39,7 @@ export default function ResultsPage() {
       // Fallback to old method
       const lastScoreData = localStorage.getItem("lastExamScore");
       const examProgressData = localStorage.getItem("examProgress");
-      
+
       if (lastScoreData) {
         const scoreData: Score = JSON.parse(lastScoreData);
         setScore(scoreData);
@@ -111,6 +110,15 @@ export default function ResultsPage() {
     return "bg-red-50 dark:bg-red-900/20";
   };
 
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case "ง่าย": return "bg-green-500 text-white";
+      case "ปานกลาง": return "bg-yellow-500 text-white";
+      case "ยาก": return "bg-red-500 text-white";
+      default: return "bg-gray-500 text-white";
+    }
+  };
+
   return (
     <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-primary-bg'}`}>
       {/* Results Header */}
@@ -126,16 +134,16 @@ export default function ResultsPage() {
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           </div>
-          
+
           <div className="text-center">
             <div className={`text-6xl font-bold mb-2 ${getScoreColor(scorePercentage)}`}>
               {scorePercentage}%
             </div>
-            
+
             <div className={`text-lg mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               คะแนนรวม {score.correctAnswers} จาก {score.totalQuestions} ข้อ
             </div>
-            
+
             {/* Score Breakdown */}
             {score.categoryBreakdown && (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto mb-6">
@@ -154,13 +162,13 @@ export default function ResultsPage() {
                 })}
               </div>
             )}
-            
+
             <div className={`text-sm mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               เวลาที่ใช้: {Math.floor(score.timeSpent / 60)} นาที {score.timeSpent % 60} วินาที
             </div>
-            
+
             <div className="space-x-4">
-              <Button 
+              <Button
                 className="bg-primary-blue hover:bg-blue-500"
                 onClick={() => document.getElementById("review-section")?.scrollIntoView({ behavior: "smooth" })}
               >
@@ -177,7 +185,7 @@ export default function ResultsPage() {
       {/* Answer Review */}
       <main className="max-w-4xl mx-auto px-4 py-8" id="review-section">
         <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>รีวิวข้อสอบ</h2>
-        
+
         {/* Filter Options */}
         <Card className={`mb-6 ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
           <CardContent className="pt-6">
@@ -220,105 +228,168 @@ export default function ResultsPage() {
         </Card>
 
         {/* Question Review Items */}
-        <div className="space-y-4">
-          {filteredQuestions.map((question, index) => {
-            const optionLabels = ['ก', 'ข', 'ค', 'ง'];
-            const questionNumber = examQuestions.findIndex(q => q.id === question.id) + 1;
-            
-            return (
-              <Card key={question.id} className={`overflow-hidden ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>ข้อ {questionNumber}</span>
-                      <Badge 
-                        variant={question.isCorrect ? "default" : "destructive"} 
-                        className={
-                          question.isCorrect 
-                            ? "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/50 dark:text-green-300" 
-                            : "bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300"
-                        }
+        {filteredQuestions.length > 0 && (
+          <div className="space-y-6">
+            {filteredQuestions.map((question, index) => {
+              const questionIndex = examQuestions.findIndex(q => q.id === question.id);
+              return (
+                <Card key={question.id} className={`transition-all duration-300 hover:shadow-lg ${
+                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                }`}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+                      <div className="flex items-center space-x-3 flex-wrap">
+                        <Badge
+                          variant="secondary"
+                          className={`px-3 py-1 font-semibold ${
+                            darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          ข้อ {questionIndex + 1}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={`px-3 py-1 font-medium border-2 ${
+                            question.isCorrect
+                              ? darkMode
+                                ? 'border-green-500 bg-green-900/30 text-green-400'
+                                : 'border-green-500 bg-green-50 text-green-700'
+                              : darkMode
+                                ? 'border-red-500 bg-red-900/30 text-red-400'
+                                : 'border-red-500 bg-red-50 text-red-700'
+                          }`}
+                        >
+                          {question.isCorrect ? "✓ ตอบถูก" : "✗ ตอบผิด"}
+                        </Badge>
+                        {question.isBookmarked && (
+                          <Badge className="bg-yellow-400 text-yellow-900 px-3 py-1 font-medium">
+                            📌 บุ๊กมาร์ก
+                          </Badge>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className={`px-3 py-1 ${
+                            darkMode ? 'border-blue-500 bg-blue-900/30 text-blue-400' : 'border-blue-500 bg-blue-50 text-blue-700'
+                          }`}
+                        >
+                          {question.category}
+                        </Badge>
+                      </div>
+                      <Badge
+                        className={`px-3 py-1 ${getDifficultyColor(question.difficulty)}`}
                       >
-                        {question.isCorrect ? "ตอบถูก" : "ตอบผิด"}
-                      </Badge>
-                      <Badge 
-                        variant="secondary" 
-                        className="bg-primary-blue/10 text-primary-blue dark:bg-primary-blue/20"
-                      >
-                        {question.category}
+                        {question.difficulty}
                       </Badge>
                     </div>
-                    {question.isBookmarked && <span className="text-yellow-500">🔖</span>}
-                  </div>
-                  
-                  <h3 className={`text-lg font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                    {question.questionText}
-                  </h3>
-                  
-                  <div className="space-y-2 mb-4">
-                    {question.options.map((option, optionIndex) => {
-                      const isCorrect = optionIndex === question.correctAnswerIndex;
-                      const isUserAnswer = optionIndex === question.userAnswer;
-                      
-                      let className = "flex items-center p-3 rounded-lg ";
-                      let statusText = "";
-                      
-                      if (isCorrect) {
-                        className += "bg-green-50 border-2 border-green-500 dark:bg-green-900/20 dark:border-green-500 ";
-                        statusText = " ✓ (คำตอบที่ถูก)";
-                      } else if (isUserAnswer && !isCorrect) {
-                        className += "bg-red-50 border-2 border-red-500 dark:bg-red-900/20 dark:border-red-500 ";
-                        statusText = " ✗ (คำตอบที่คุณเลือก)";
-                      } else if (isUserAnswer) {
-                        className += "bg-blue-50 border-2 border-blue-500 dark:bg-blue-900/20 dark:border-blue-500 ";
-                        statusText = " (คำตอบที่คุณเลือก)";
-                      } else {
-                        className += `bg-gray-50 dark:bg-gray-800/50 ${darkMode ? 'border-gray-600' : 'border-gray-200'} `;
-                      }
-                      
-                      return (
-                        <div key={optionIndex} className={className}>
-                          <span className={`w-6 h-6 text-white text-xs font-medium rounded-full flex items-center justify-center mr-3 ${
-                            isCorrect ? "bg-green-500" : 
-                            isUserAnswer ? (isCorrect ? "bg-green-500" : "bg-red-500") : 
-                            "bg-gray-400"
-                          }`}>
-                            {optionLabels[optionIndex]}
-                          </span>
-                          <span className={`${isCorrect || isUserAnswer ? "font-medium" : ""} ${
-                            isCorrect ? "text-green-700 dark:text-green-300" : 
-                            isUserAnswer && !isCorrect ? "text-red-700 dark:text-red-300" : 
-                            isUserAnswer ? "text-blue-700 dark:text-blue-300" : 
-                            darkMode ? "text-gray-300" : "text-gray-600"
-                          }`}>
-                            {option}{statusText}
-                          </span>
+
+                    <div className={`p-4 rounded-lg mb-6 ${
+                      darkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                    }`}>
+                      <h3 className={`text-lg font-medium leading-relaxed ${
+                        darkMode ? 'text-gray-200' : 'text-gray-800'
+                      }`}>
+                        {question.questionText}
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3">
+                      {question.options.map((option, optionIndex) => {
+                        const isUserAnswer = question.userAnswer === optionIndex;
+                        const isCorrectAnswer = question.correctAnswerIndex === optionIndex;
+                        const optionLabels = ['ก', 'ข', 'ค', 'ง'];
+
+                        let optionStyle = `p-4 border-2 rounded-xl transition-all duration-300 ${
+                          darkMode ? 'border-gray-600 bg-gray-700/30' : 'border-gray-300 bg-gray-50'
+                        }`;
+
+                        if (isCorrectAnswer) {
+                          optionStyle = `p-4 border-2 rounded-xl transition-all duration-300 ${
+                            darkMode
+                              ? 'border-green-500 bg-green-900/30 shadow-md'
+                              : 'border-green-500 bg-green-50 shadow-md'
+                          }`;
+                        }
+                        if (isUserAnswer && !isCorrectAnswer) {
+                          optionStyle = `p-4 border-2 rounded-xl transition-all duration-300 ${
+                            darkMode
+                              ? 'border-red-500 bg-red-900/30 shadow-md'
+                              : 'border-red-500 bg-red-50 shadow-md'
+                          }`;
+                        }
+
+                        return (
+                          <div key={optionIndex} className={optionStyle}>
+                            <div className="flex items-center">
+                              <span className={`w-10 h-10 text-sm font-bold rounded-full flex items-center justify-center mr-4 transition-all duration-300 ${
+                                isCorrectAnswer
+                                  ? 'bg-green-500 text-white shadow-md'
+                                  : isUserAnswer && !isCorrectAnswer
+                                    ? 'bg-red-500 text-white shadow-md'
+                                    : darkMode
+                                      ? 'bg-gray-600 text-gray-300'
+                                      : 'bg-gray-300 text-gray-700'
+                              }`}>
+                                {optionLabels[optionIndex]}
+                              </span>
+                              <span className={`flex-1 text-base leading-relaxed ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              }`}>
+                                {option}
+                              </span>
+                              <div className="flex flex-col items-end gap-1">
+                                {isUserAnswer && (
+                                  <Badge
+                                    variant="secondary"
+                                    className={`text-xs ${
+                                      isCorrectAnswer
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}
+                                  >
+                                    คุณเลือก
+                                  </Badge>
+                                )}
+                                {isCorrectAnswer && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="bg-green-100 text-green-800 text-xs"
+                                  >
+                                    ✓ เฉลย
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Show explanation if user got it wrong */}
+                    {!question.isCorrect && (
+                      <div className={`mt-4 p-4 rounded-lg border-l-4 ${
+                        darkMode ? 'bg-blue-900/20 border-blue-500' : 'bg-blue-50 border-blue-500'
+                      }`}>
+                        <div className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                          <strong>เฉลย:</strong> ตัวเลือกที่ถูกต้องคือ "{question.options[question.correctAnswerIndex]}"
                         </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className={`border-t pt-4 ${darkMode ? 'border-gray-600' : ''}`}>
-                    <h4 className={`font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>คำอธิบาย:</h4>
-                    <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {question.explanation}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-          
-          {filteredQuestions.length === 0 && (
-            <Card className={darkMode ? 'bg-gray-800 border-gray-700' : ''}>
-              <CardContent className="pt-6 text-center py-12">
-                <div className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  ไม่พบข้อสอบที่ตรงกับเงื่อนไขที่เลือก
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {filteredQuestions.length === 0 && (
+          <Card className={darkMode ? 'bg-gray-800 border-gray-700' : ''}>
+            <CardContent className="pt-6 text-center py-12">
+              <div className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                ไม่พบข้อสอบที่ตรงกับเงื่อนไขที่เลือก
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
