@@ -8,6 +8,9 @@ export type {
   CsvQuestion
 } from "@shared/schema";
 
+// Import types from shared schema
+import type { Question } from "@shared/schema";
+
 // Additional frontend-specific types
 export interface ExamProgress {
   answers: Record<string, number>;

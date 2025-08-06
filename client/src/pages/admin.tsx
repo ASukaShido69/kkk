@@ -46,7 +46,7 @@ export default function AdminPage() {
     },
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{ totalQuestions: number; totalExams: number; averageScore: number; averageTime: number }>({
     queryKey: ["/api/admin/stats"],
     enabled: isAuthenticated,
   });
@@ -56,7 +56,7 @@ export default function AdminPage() {
     enabled: isAuthenticated,
   });
 
-  const { data: scores } = useQuery({
+  const { data: scores } = useQuery<any[]>({
     queryKey: ["/api/scores"],
     enabled: isAuthenticated,
   });

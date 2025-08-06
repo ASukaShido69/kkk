@@ -81,7 +81,7 @@ export default function ProfilePage() {
       .sort()
       .reverse();
     
-    const uniqueDates = [...new Set(sortedDates)];
+    const uniqueDates = Array.from(new Set(sortedDates));
     let streak = 0;
     let currentDate = new Date();
     

@@ -183,9 +183,10 @@ export class MemStorage implements IStorage {
   async createScore(insertScore: InsertScore): Promise<Score> {
     const id = randomUUID();
     const score: Score = { 
-      ...insertScore, 
+      ...insertScore,
       id, 
-      dateTaken: new Date() 
+      dateTaken: new Date(),
+      categoryBreakdown: insertScore.categoryBreakdown || null
     };
     this.scores.set(id, score);
     return score;

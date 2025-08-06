@@ -18,11 +18,11 @@ export default function HomePage() {
   const [examType, setExamType] = useState<"full" | "custom">("full");
   const [customConfig, setCustomConfig] = useState<Record<string, number>>({});
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{ totalQuestions: number; totalExams: number; averageScore: number; averageTime: number }>({
     queryKey: ["/api/admin/stats"],
   });
 
-  const { data: questions } = useQuery({
+  const { data: questions } = useQuery<any[]>({
     queryKey: ["/api/questions"],
   });
 
