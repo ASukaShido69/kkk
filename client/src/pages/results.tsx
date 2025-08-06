@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Moon, Sun } from "lucide-react";
 import type { Score, Question } from "@/lib/types";
 
 interface QuestionReview extends Question {
@@ -16,6 +17,7 @@ export default function ResultsPage() {
   const [score, setScore] = useState<Score | null>(null);
   const [examQuestions, setExamQuestions] = useState<QuestionReview[]>([]);
   const [filter, setFilter] = useState<"all" | "correct" | "incorrect" | "bookmarked">("all");
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     // Load last exam score and questions from localStorage
@@ -39,9 +41,18 @@ export default function ResultsPage() {
     }
   }, []);
 
+  // Dark mode effect
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   if (!score) {
     return (
-      <div className="min-h-screen bg-primary-bg flex items-center justify-center">
+      <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-primary-bg'} flex items-center justify-center`}>
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center">
             <h2 className="text-lg font-semibold mb-2">ไม่พบผลการสอบ</h2>
@@ -83,11 +94,22 @@ export default function ResultsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-primary-bg">
+    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-primary-bg'}`}>
       {/* Results Header */}
-      <div className="bg-white border-b border-secondary-gray">
-        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">ผลการสอบ</h1>
+      <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-secondary-gray'} border-b`}>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">ผลการสอบ</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDarkMode(!darkMode)}
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </div>
+          
+          <div className="text-center">
           
           <div className={`text-6xl font-bold mb-2 ${getScoreColor(scorePercentage)}`}>
             {scorePercentage}%

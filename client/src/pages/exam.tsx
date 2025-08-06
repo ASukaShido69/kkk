@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +13,15 @@ import type { Question, ExamConfig } from "@/lib/types";
 
 // Placeholder for exam duration (in seconds) - assuming 3 hours
 const EXAM_DURATION = 3 * 60 * 60;
+
+const categories = [
+  { id: "ความสามารถทั่วไป", name: "ความสามารถทั่วไป", color: "bg-blue-500" },
+  { id: "ภาษาไทย", name: "ภาษาไทย", color: "bg-green-500" },
+  { id: "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)", name: "คอมพิวเตอร์", color: "bg-purple-500" },
+  { id: "ภาษาอังกฤษ", name: "ภาษาอังกฤษ", color: "bg-red-500" },
+  { id: "สังคม วัฒนธรรม จริยธรรม และอาเซียน", name: "สังคม วัฒนธรรม", color: "bg-yellow-500" },
+  { id: "กฎหมายที่ประชาชนควรรู้", name: "กฎหมาย", color: "bg-indigo-500" },
+];
 
 export default function ExamPage() {
   const [, setLocation] = useLocation();
@@ -28,6 +38,7 @@ export default function ExamPage() {
   const [showNavigationGrid, setShowNavigationGrid] = useState(false);
   const [examQuestions, setExamQuestions] = useState<Question[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | "error">("saved");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   // Helper function to determine difficulty color
   const getDifficultyColor = (difficulty: string) => {
@@ -280,6 +291,40 @@ export default function ExamPage() {
   const isLastQuestion = currentQuestionIndex === examQuestions.length - 1;
   const allQuestionsAnswered = answeredQuestions === examQuestions.length;
 
+  // Get category progress
+  const getCategoryProgress = () => {
+    const categoryStats: Record<string, { total: number; answered: number; color: string }> = {};
+    
+    examQuestions.forEach(question => {
+      const categoryInfo = categories.find(cat => cat.id === question.category);
+      const categoryKey = categoryInfo?.id || question.category;
+      
+      if (!categoryStats[categoryKey]) {
+        categoryStats[categoryKey] = {
+          total: 0,
+          answered: 0,
+          color: categoryInfo?.color || "bg-gray-500"
+        };
+      }
+      
+      categoryStats[categoryKey].total++;
+      if (answers[question.id] !== undefined) {
+        categoryStats[categoryKey].answered++;
+      }
+    });
+    
+    return categoryStats;
+  };
+
+  // Filter questions by category
+  const filteredQuestions = selectedCategory === "all" 
+    ? examQuestions 
+    : examQuestions.filter(q => q.category === selectedCategory);
+
+  const getQuestionsByCategory = (categoryId: string) => {
+    return examQuestions.filter(q => q.category === categoryId);
+  };
+
   return (
     <div className="min-h-screen bg-primary-bg">
       {/* Exam Header */}
@@ -297,8 +342,51 @@ export default function ExamPage() {
             />
           </div>
 
-          {/* Progress Bar */}
-          <Progress value={progress} className="w-full h-2 mb-2" />
+          {/* Category Filter */}
+          <div className="mb-4">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="เลือกวิชา" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกวิชา</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Overall Progress Bar */}
+          <Progress value={progress} className="w-full h-2 mb-4" />
+          
+          {/* Category Progress Bars */}
+          <div className="space-y-2 mb-2">
+            {Object.entries(getCategoryProgress()).map(([categoryId, stats]) => {
+              const categoryInfo = categories.find(cat => cat.id === categoryId);
+              const categoryProgress = (stats.answered / stats.total) * 100;
+              
+              return (
+                <div key={categoryId} className="flex items-center space-x-3">
+                  <div className="w-32 text-xs text-gray-600 truncate">
+                    {categoryInfo?.name || categoryId}
+                  </div>
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${stats.color}`}
+                      style={{ width: `${categoryProgress}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-600 w-16">
+                    {stats.answered}/{stats.total}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
           <div className="text-xs text-gray-600">
             ความคืบหน้า: {progress.toFixed(1)}% • ตอบแล้ว: {answeredQuestions}/{examQuestions.length} ข้อ
           </div>

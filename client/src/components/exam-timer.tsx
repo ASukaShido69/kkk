@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 
+import { useState, useEffect } from "react";
+
 interface ExamTimerProps {
   duration: number; // Duration in seconds
   onTimeUp: () => void;
@@ -42,10 +44,22 @@ export default function ExamTimer({ duration, onTimeUp, startTime }: ExamTimerPr
   };
 
   const getTimeBgColor = () => {
-    if (timeRemaining <= 300) return "bg-red-50 border-red-200";
-    if (timeRemaining <= 1800) return "bg-yellow-50 border-yellow-200";
-    return "bg-blue-50 border-blue-200";
+    if (timeRemaining <= 300) return "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-700";
+    if (timeRemaining <= 1800) return "bg-yellow-50 border-yellow-200 dark:bg-yellow-900 dark:border-yellow-700";
+    return "bg-blue-50 border-blue-200 dark:bg-blue-900 dark:border-blue-700";
   };
+
+  return (
+    <div className={`px-4 py-2 rounded-lg border-2 ${getTimeBgColor()}`}>
+      <div className="text-center">
+        <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">เวลาที่เหลือ</div>
+        <div className={`text-lg font-bold ${getTimeColor()}`}>
+          {formatTime(timeRemaining)}
+        </div>
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className="text-right">
