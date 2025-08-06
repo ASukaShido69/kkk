@@ -511,11 +511,59 @@ export default function ExamPage() {
                 </Button>
               </div>
 
+              {/* Category Filter in Navigation Grid */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <Filter className={`w-4 h-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    กรองตามวิชา:
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={selectedCategory === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory("all")}
+                    className={`rounded-full ${selectedCategory === "all" 
+                      ? 'bg-primary-blue hover:bg-blue-600 text-white' 
+                      : darkMode 
+                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                      ทุกวิชา
+                    </div>
+                  </Button>
+                  {categories.map((category) => (
+                    <Button
+                      key={category.id}
+                      variant={selectedCategory === category.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`rounded-full ${selectedCategory === category.id
+                        ? 'bg-primary-blue hover:bg-blue-600 text-white'
+                        : darkMode
+                          ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 ${darkMode ? category.darkColor : category.color} rounded-full`}></div>
+                        {category.name}
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-10 gap-3 mb-6">
-                {examQuestions.map((question, index) => {
+                {(selectedCategory === "all" ? examQuestions : examQuestions.filter(q => q.category === selectedCategory)).map((question, filteredIndex) => {
+                  const originalIndex = examQuestions.findIndex(q => q.id === question.id);
                   const isAnswered = answers[question.id] !== undefined;
                   const isBookmarked = bookmarkedQuestions.includes(question.id);
-                  const isCurrent = index === currentQuestionIndex;
+                  const isCurrent = originalIndex === currentQuestionIndex;
                   const categoryInfo = categories.find(cat => cat.id === question.category);
 
                   return (
@@ -523,7 +571,7 @@ export default function ExamPage() {
                       key={question.id}
                       variant="outline"
                       size="sm"
-                      onClick={() => jumpToQuestion(index)}
+                      onClick={() => jumpToQuestion(originalIndex)}
                       className={`
                         relative min-w-[45px] h-12 text-sm font-bold transition-all duration-300 rounded-xl
                         ${isCurrent
@@ -534,9 +582,9 @@ export default function ExamPage() {
                         }
                         ${isBookmarked ? (darkMode ? "ring-2 ring-yellow-500 ring-offset-2 ring-offset-gray-800" : "ring-2 ring-yellow-400 ring-offset-2") : ""}
                       `}
-                      title={`ข้อ ${index + 1} - ${categoryInfo?.name || question.category}${isBookmarked ? ' (บุ๊กมาร์ก)' : ''}${isAnswered ? ' (ตอบแล้ว)' : ''}`}
+                      title={`ข้อ ${originalIndex + 1} - ${categoryInfo?.name || question.category}${isBookmarked ? ' (บุ๊กมาร์ก)' : ''}${isAnswered ? ' (ตอบแล้ว)' : ''}`}
                     >
-                      {index + 1}
+                      {originalIndex + 1}
                       {isBookmarked && (
                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-xs shadow-md">
                           📌

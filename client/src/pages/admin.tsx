@@ -1,19 +1,19 @@
-
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, Upload, Download, Moon, Sun, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Download, Moon, Sun, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import type { Question, Score, ExamSet } from "@/lib/types";
 
 const categories = [
@@ -35,12 +35,12 @@ export default function AdminPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [questionsPerPage] = useState(10);
-  
+
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [editingExamSet, setEditingExamSet] = useState<ExamSet | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isExamSetDialogOpen, setIsExamSetDialogOpen] = useState(false);
-  
+
   const [questionForm, setQuestionForm] = useState({
     questionText: "",
     options: ["", "", "", ""],
@@ -58,6 +58,8 @@ export default function AdminPage() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const setLocation = useLocation()[1];
+
 
   // Dark mode effect
   useEffect(() => {
@@ -314,6 +316,16 @@ export default function AdminPage() {
     loginMutation.mutate({ username, password });
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem("adminLoggedIn");
+    setLocation("/");
+    toast({
+      title: "ออกจากระบบสำเร็จ",
+      description: "ขอบคุณที่ใช้บริการ",
+    });
+  };
+
   const resetQuestionForm = () => {
     setQuestionForm({
       questionText: "",
@@ -429,7 +441,7 @@ export default function AdminPage() {
       const response = await fetch("/api/scores/export", {
         method: "POST",
       });
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -438,7 +450,7 @@ export default function AdminPage() {
         a.download = 'exam_scores.csv';
         a.click();
         window.URL.revokeObjectURL(url);
-        
+
         toast({
           title: "ส่งออกสำเร็จ",
           description: "ส่งออกข้อมูลคะแนนเรียบร้อยแล้ว",
@@ -511,8 +523,9 @@ export default function AdminPage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setIsLoggedIn(false)}
+                onClick={handleLogout}
               >
+                <LogOut className="h-4 w-4 mr-2" />
                 ออกจากระบบ
               </Button>
             </div>
@@ -798,7 +811,7 @@ export default function AdminPage() {
           {/* Exam Sets Tab */}
           <TabsContent value="exam-sets" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">จัดการชุดข้อสอบ</h2>
+              <h2 className="text-xl font-semibold">ชุดข้อสอบ</h2>
               <Dialog open={isExamSetDialogOpen} onOpenChange={setIsExamSetDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={() => { resetExamSetForm(); setEditingExamSet(null); }}>
@@ -973,7 +986,7 @@ export default function AdminPage() {
           {/* Import/Export Tab */}
           <TabsContent value="import" className="space-y-4">
             <h2 className="text-xl font-semibold">นำเข้า/ส่งออกข้อมูล</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
