@@ -52,13 +52,46 @@ export default function HomePage() {
   const totalCustomQuestions = Object.values(customConfig).reduce((sum, count) => sum + count, 0);
 
   const handleStartExam = () => {
+    if (examType === "examSet" && !selectedExamSetId) {
+      toast({
+        title: "กรุณาเลือกชุดข้อสอบ",
+        description: "โปรดเลือกชุดข้อสอบก่อนเริ่มทำการสอบ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (examType === "custom" && totalCustomQuestions === 0) {
+      toast({
+        title: "กรุณากำหนดจำนวนข้อสอบ",
+        description: "โปรดระบุจำนวนข้อสอบในแต่ละหมวดวิชา",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // จำกัดข้อสอบไม่เกิน 150 ข้อ
+    let totalQuestions = 0;
+    if (examType === "custom") {
+      totalQuestions = totalCustomQuestions;
+      if (totalQuestions > 150) {
+        toast({
+          title: "จำนวนข้อสอบเกินขีดจำกัด",
+          description: "จำนวนข้อสอบรวมต้องไม่เกิน 150 ข้อ",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const config = {
-      type: examType,
       examSetId: examType === "examSet" ? selectedExamSetId : undefined,
-      categories: examType === "custom" ? customConfig : undefined,
+      customCategories: examType === "custom" ? customConfig : undefined,
     };
     
-    // Store exam config in localStorage for the exam page
+    // บันทึกการตั้งค่าการสอบและไปหน้าสอบ
+    localStorage.setItem("examConfig", JSON.stringify(config));
+    setLocation("/exam");tore exam config in localStorage for the exam page
     localStorage.setItem("examConfig", JSON.stringify(config));
   };
 

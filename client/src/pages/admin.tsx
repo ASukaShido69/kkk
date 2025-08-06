@@ -21,6 +21,13 @@ export default function AdminPage() {
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [showExamSetForm, setShowExamSetForm] = useState(false);
+  const [editingExamSet, setEditingExamSet] = useState<any>(null);
+  const [examSetForm, setExamSetForm] = useState({
+    name: "",
+    description: "",
+    categoryDistribution: {} as Record<string, number>
+  });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -58,6 +65,11 @@ export default function AdminPage() {
 
   const { data: scores } = useQuery<any[]>({
     queryKey: ["/api/scores"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: examSets } = useQuery<any[]>({
+    queryKey: ["/api/exam-sets"],
     enabled: isAuthenticated,
   });
 
@@ -111,6 +123,73 @@ export default function AdminPage() {
     },
   });
 
+  const createExamSetMutation = useMutation({
+    mutationFn: async (examSet: any) => {
+      const response = await apiRequest("POST", "/api/exam-sets", examSet);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exam-sets"] });
+      setShowExamSetForm(false);
+      setExamSetForm({ name: "", description: "", categoryDistribution: {} });
+      toast({
+        title: "สร้างชุดข้อสอบสำเร็จ",
+        description: "ชุดข้อสอบใหม่ถูกสร้างแล้ว",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "สร้างชุดข้อสอบไม่สำเร็จ",
+        description: "เกิดข้อผิดพลาดในการสร้างชุดข้อสอบ",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateExamSetMutation = useMutation({
+    mutationFn: async ({ id, examSet }: { id: string; examSet: any }) => {
+      const response = await apiRequest("PUT", `/api/exam-sets/${id}`, examSet);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exam-sets"] });
+      setShowExamSetForm(false);
+      setEditingExamSet(null);
+      setExamSetForm({ name: "", description: "", categoryDistribution: {} });
+      toast({
+        title: "แก้ไขชุดข้อสอบสำเร็จ",
+        description: "ชุดข้อสอบถูกแก้ไขแล้ว",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "แก้ไขชุดข้อสอบไม่สำเร็จ",
+        description: "เกิดข้อผิดพลาดในการแก้ไขชุดข้อสอบ",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteExamSetMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/exam-sets/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exam-sets"] });
+      toast({
+        title: "ลบชุดข้อสอบสำเร็จ",
+        description: "ชุดข้อสอบถูกลบแล้ว",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ลบชุดข้อสอบไม่สำเร็จ",
+        description: "เกิดข้อผิดพลาดในการลบชุดข้อสอบ",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     loginMutation.mutate(loginForm);
@@ -134,6 +213,78 @@ export default function AdminPage() {
     if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบข้อสอบนี้?")) {
       deleteQuestionMutation.mutate(id);
     }
+  };
+
+  const handleCreateExamSet = () => {
+    setEditingExamSet(null);
+    setExamSetForm({ name: "", description: "", categoryDistribution: {} });
+    setShowExamSetForm(true);
+  };
+
+  const handleEditExamSet = (examSet: any) => {
+    setEditingExamSet(examSet);
+    setExamSetForm({
+      name: examSet.name,
+      description: examSet.description,
+      categoryDistribution: examSet.categoryDistribution
+    });
+    setShowExamSetForm(true);
+  };
+
+  const handleDeleteExamSet = (id: string) => {
+    if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบชุดข้อสอบนี้?")) {
+      deleteExamSetMutation.mutate(id);
+    }
+  };
+
+  const handleSaveExamSet = () => {
+    if (!examSetForm.name.trim()) {
+      toast({
+        title: "กรุณากรอกชื่อชุดข้อสอบ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const totalQuestions = Object.values(examSetForm.categoryDistribution).reduce((sum, count) => sum + count, 0);
+    if (totalQuestions === 0) {
+      toast({
+        title: "กรุณากำหนดจำนวนข้อสอบ",
+        description: "ต้องมีข้อสอบอย่างน้อย 1 ข้อ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (totalQuestions > 150) {
+      toast({
+        title: "จำนวนข้อสอบเกินขีดจำกัด",
+        description: "จำนวนข้อสอบรวมต้องไม่เกิน 150 ข้อ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const examSetData = {
+      ...examSetForm,
+      isActive: 1
+    };
+
+    if (editingExamSet) {
+      updateExamSetMutation.mutate({ id: editingExamSet.id, examSet: examSetData });
+    } else {
+      createExamSetMutation.mutate(examSetData);
+    }
+  };
+
+  const updateCategoryCount = (category: string, count: number) => {
+    setExamSetForm(prev => ({
+      ...prev,
+      categoryDistribution: {
+        ...prev.categoryDistribution,
+        [category]: Math.max(0, count)
+      }
+    }));
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -308,8 +459,9 @@ export default function AdminPage() {
 
         {/* Tab Navigation */}
         <Tabs defaultValue="questions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="questions">จัดการข้อสอบ</TabsTrigger>
+            <TabsTrigger value="examsets">จัดการชุดข้อสอบ</TabsTrigger>
             <TabsTrigger value="scores">จัดการผลคะแนน</TabsTrigger>
             <TabsTrigger value="import">นำเข้าข้อมูล</TabsTrigger>
           </TabsList>
@@ -440,6 +592,77 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
+          {/* Exam Sets Management Tab */}
+          <TabsContent value="examsets" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>จัดการชุดข้อสอบ</CardTitle>
+                  <Button
+                    onClick={handleCreateExamSet}
+                    className="bg-primary-blue hover:bg-blue-500"
+                  >
+                    สร้างชุดข้อสอบใหม่
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {examSets && examSets.length > 0 ? (
+                  <div className="space-y-4">
+                    {examSets.map((examSet) => (
+                      <div key={examSet.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg">{examSet.name}</h3>
+                            <p className="text-gray-600 text-sm mt-1">{examSet.description}</p>
+                            <div className="mt-2">
+                              <Badge variant="outline" className="mr-2">
+                                รวม {Object.values(examSet.categoryDistribution).reduce((sum: number, count: number) => sum + count, 0)} ข้อ
+                              </Badge>
+                              <Badge variant={examSet.isActive ? "default" : "secondary"}>
+                                {examSet.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditExamSet(examSet)}
+                            >
+                              แก้ไข
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteExamSet(examSet.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              ลบ
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                          {Object.entries(examSet.categoryDistribution).map(([category, count]) => (
+                            <div key={category} className="flex justify-between bg-gray-50 p-2 rounded">
+                              <span className="truncate">{category.replace("คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)", "คอมพิวเตอร์")}</span>
+                              <Badge variant="secondary">{count} ข้อ</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    ยังไม่มีชุดข้อสอบ
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Scores Management Tab */}
           <TabsContent value="scores" className="space-y-6">
             <Card>
@@ -528,6 +751,109 @@ export default function AdminPage() {
               queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
             }}
           />
+        )}
+
+        {/* ExamSet Form Modal */}
+        {showExamSetForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">
+                  {editingExamSet ? "แก้ไขชุดข้อสอบ" : "สร้างชุดข้อสอบใหม่"}
+                </h3>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowExamSetForm(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">ชื่อชุดข้อสอบ</label>
+                  <Input
+                    value={examSetForm.name}
+                    onChange={(e) => setExamSetForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="เช่น การสอบนายสิบตำรวจ 2568"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">คำอธิบาย</label>
+                  <Input
+                    value={examSetForm.description}
+                    onChange={(e) => setExamSetForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="เช่น ชุดข้อสอบมาตรฐานสำหรับการสอบนายสิบตำรวจ"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-3">จำนวนข้อสอบในแต่ละหมวดวิชา</label>
+                  <div className="space-y-3">
+                    {[
+                      "ความสามารถทั่วไป",
+                      "ภาษาไทย",
+                      "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)",
+                      "ภาษาอังกฤษ",
+                      "สังคม วัฒนธรรม จริยธรรม และอาเซียน",
+                      "กฎหมายที่ประชาชนควรรู้"
+                    ].map((category) => (
+                      <div key={category} className="flex items-center justify-between">
+                        <label className="flex-1 text-sm">{category}</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="150"
+                          value={examSetForm.categoryDistribution[category] || 0}
+                          onChange={(e) => updateCategoryCount(category, parseInt(e.target.value) || 0)}
+                          className="w-20"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-3 p-3 bg-gray-50 rounded">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium">จำนวนข้อสอบรวม:</span>
+                      <Badge variant={
+                        Object.values(examSetForm.categoryDistribution).reduce((sum, count) => sum + count, 0) > 150 
+                          ? "destructive" 
+                          : "secondary"
+                      }>
+                        {Object.values(examSetForm.categoryDistribution).reduce((sum, count) => sum + count, 0)} ข้อ
+                      </Badge>
+                    </div>
+                    {Object.values(examSetForm.categoryDistribution).reduce((sum, count) => sum + count, 0) > 150 && (
+                      <p className="text-red-600 text-sm mt-1">
+                        จำนวนข้อสอบต้องไม่เกิน 150 ข้อ
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowExamSetForm(false)}
+                  >
+                    ยกเลิก
+                  </Button>
+                  <Button
+                    onClick={handleSaveExamSet}
+                    disabled={createExamSetMutation.isPending || updateExamSetMutation.isPending}
+                    className="bg-primary-blue hover:bg-blue-500"
+                  >
+                    {createExamSetMutation.isPending || updateExamSetMutation.isPending 
+                      ? "กำลังบันทึก..." 
+                      : editingExamSet ? "บันทึกการแก้ไข" : "สร้างชุดข้อสอบ"
+                    }
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

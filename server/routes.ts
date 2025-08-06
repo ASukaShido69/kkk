@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertQuestionSchema, insertScoreSchema, examConfigSchema, csvQuestionSchema, adminCredentials } from "@shared/schema";
+import { insertQuestionSchema, insertScoreSchema, examConfigSchema, csvQuestionSchema, adminCredentials, insertExamSetSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 
@@ -332,14 +332,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!examSet) {
           return res.status(404).json({ message: "Exam set not found" });
         }
-        questions = await storage.getRandomQuestions(150, examSet.categoryDistribution);
+        // คำนวณจำนวนข้อสอบรวมและจำกัดไม่เกิน 150
+        const totalQuestions = Object.values(examSet.categoryDistribution).reduce((sum, count) => sum + count, 0);
+        const limitedTotal = Math.min(totalQuestions, 150);
+        
+        // ปรับสัดส่วนถ้าเกิน 150
+        let distribution = examSet.categoryDistribution;
+        if (totalQuestions > 150) {
+          const ratio = 150 / totalQuestions;
+          distribution = {};
+          for (const [category, count] of Object.entries(examSet.categoryDistribution)) {
+            distribution[category] = Math.floor(count * ratio);
+          }
+          // ปรับให้รวมเป็น 150 พอดี
+          const currentTotal = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+          if (currentTotal < 150) {
+            const categories = Object.keys(distribution);
+            const remaining = 150 - currentTotal;
+            for (let i = 0; i < remaining; i++) {
+              const category = categories[i % categories.length];
+              distribution[category]++;
+            }
+          }
+        }
+        
+        questions = await storage.getRandomQuestions(limitedTotal, distribution);
       } else if (customCategories) {
-        questions = await storage.getRandomQuestions(
-          Object.values(customCategories).reduce((a, b) => (a as number) + (b as number), 0) as number,
-          customCategories
-        );
+        const totalQuestions = Object.values(customCategories).reduce((sum, count) => sum + (count as number), 0);
+        if (totalQuestions > 150) {
+          return res.status(400).json({ message: "จำนวนข้อสอบต้องไม่เกิน 150 ข้อ" });
+        }
+        questions = await storage.getRandomQuestions(totalQuestions, customCategories);
       } else {
-        // Default exam with standard distribution
+        // Default exam with standard distribution (150 questions total)
         const defaultDistribution = {
           "ความสามารถทั่วไป": 30,
           "ภาษาไทย": 25,

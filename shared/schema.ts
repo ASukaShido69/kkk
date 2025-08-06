@@ -64,6 +64,8 @@ export const adminCredentials = {
   password: "leo2568",
 };
 
+// Add insertExamSetSchema to routes.ts imports if not already present
+
 // Exam configuration types
 export const examConfigSchema = z.object({
   type: z.enum(["full", "custom"]),
