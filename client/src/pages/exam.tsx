@@ -254,7 +254,17 @@ export default function ExamPage() {
       examType: examConfig?.type === "full" ? "สอบเต็มรูปแบบ" : "สอบแบบกำหนดเอง",
       answersGiven: answers,
       categoryBreakdown,
+      questions: examQuestions,
+      bookmarkedQuestions: bookmarkedQuestions,
     };
+
+    // Store complete exam data for results page
+    localStorage.setItem("lastExamData", JSON.stringify({
+      score: examData,
+      questions: examQuestions,
+      answers: answers,
+      bookmarkedQuestions: bookmarkedQuestions
+    }));
 
     submitExamMutation.mutate(examData);
   };

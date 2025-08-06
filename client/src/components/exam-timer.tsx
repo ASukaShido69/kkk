@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 
-import { useState, useEffect } from "react";
-
 interface ExamTimerProps {
   duration: number; // Duration in seconds
   onTimeUp: () => void;
@@ -57,21 +55,6 @@ export default function ExamTimer({ duration, onTimeUp, startTime }: ExamTimerPr
           {formatTime(timeRemaining)}
         </div>
       </div>
-    </div>
-  );
-};
-
-  return (
-    <div className="text-right">
-      <div className="text-sm text-gray-600 mb-1">เวลาที่เหลือ</div>
-      <Badge 
-        variant="outline" 
-        className={`text-lg font-bold px-3 py-1 ${getTimeColor()} ${getTimeBgColor()} ${
-          timeRemaining <= 300 ? "pulse-animation" : ""
-        }`}
-      >
-        {formatTime(timeRemaining)}
-      </Badge>
     </div>
   );
 }
