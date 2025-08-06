@@ -111,47 +111,48 @@ export default function ResultsPage() {
           
           <div className="text-center">
           
-          <div className={`text-6xl font-bold mb-2 ${getScoreColor(scorePercentage)}`}>
-            {scorePercentage}%
-          </div>
-          
-          <div className="text-lg text-gray-600 mb-4">
-            คะแนนรวม {score.correctAnswers} จาก {score.totalQuestions} ข้อ
-          </div>
-          
-          {/* Score Breakdown */}
-          {score.categoryBreakdown && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto mb-6">
-              {Object.entries(score.categoryBreakdown).map(([category, breakdown]) => {
-                const categoryScore = Math.round((breakdown.correct / breakdown.total) * 100);
-                return (
-                  <div key={category} className={`rounded-xl p-4 ${getScoreBgColor(categoryScore)}`}>
-                    <div className="text-sm text-gray-600 mb-1 truncate" title={category}>
-                      {category.replace("คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)", "คอมพิวเตอร์")}
-                    </div>
-                    <div className={`text-lg font-bold ${getScoreColor(categoryScore)}`}>
-                      {breakdown.correct}/{breakdown.total}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className={`text-6xl font-bold mb-2 ${getScoreColor(scorePercentage)}`}>
+              {scorePercentage}%
             </div>
-          )}
-          
-          <div className="text-sm text-gray-600 mb-6">
-            เวลาที่ใช้: {Math.floor(score.timeSpent / 60)} นาที {score.timeSpent % 60} วินาที
-          </div>
-          
-          <div className="space-x-4">
-            <Button 
-              className="bg-primary-blue hover:bg-blue-500"
-              onClick={() => document.getElementById("review-section")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              ดูเฉลยข้อสอบ
-            </Button>
-            <Link href="/">
-              <Button variant="outline">กลับหน้าหลัก</Button>
-            </Link>
+            
+            <div className="text-lg text-gray-600 mb-4">
+              คะแนนรวม {score.correctAnswers} จาก {score.totalQuestions} ข้อ
+            </div>
+            
+            {/* Score Breakdown */}
+            {score.categoryBreakdown && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto mb-6">
+                {Object.entries(score.categoryBreakdown).map(([category, breakdown]) => {
+                  const categoryScore = Math.round((breakdown.correct / breakdown.total) * 100);
+                  return (
+                    <div key={category} className={`rounded-xl p-4 ${getScoreBgColor(categoryScore)}`}>
+                      <div className="text-sm text-gray-600 mb-1 truncate" title={category}>
+                        {category.replace("คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)", "คอมพิวเตอร์")}
+                      </div>
+                      <div className={`text-lg font-bold ${getScoreColor(categoryScore)}`}>
+                        {breakdown.correct}/{breakdown.total}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            <div className="text-sm text-gray-600 mb-6">
+              เวลาที่ใช้: {Math.floor(score.timeSpent / 60)} นาที {score.timeSpent % 60} วินาที
+            </div>
+            
+            <div className="space-x-4">
+              <Button 
+                className="bg-primary-blue hover:bg-blue-500"
+                onClick={() => document.getElementById("review-section")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                ดูเฉลยข้อสอบ
+              </Button>
+              <Link href="/">
+                <Button variant="outline">กลับหน้าหลัก</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
