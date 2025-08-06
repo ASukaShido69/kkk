@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { Clock, BookOpen, Target, Star, Play, Trophy, Users, TrendingUp } from "lucide-react";
 import type { ExamSet } from "@shared/schema";
 
@@ -20,6 +21,8 @@ const categories = [
 
 export default function HomePage() {
   const [examType, setExamType] = useState<"examSet" | "custom">("examSet");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [selectedExamSetId, setSelectedExamSetId] = useState<string>("");
   const [customConfig, setCustomConfig] = useState<Record<string, number>>({});
 
@@ -91,8 +94,7 @@ export default function HomePage() {
     
     // บันทึกการตั้งค่าการสอบและไปหน้าสอบ
     localStorage.setItem("examConfig", JSON.stringify(config));
-    setLocation("/exam");tore exam config in localStorage for the exam page
-    localStorage.setItem("examConfig", JSON.stringify(config));
+    setLocation("/exam");
   };
 
   const selectedExamSet = examSets?.find(set => set.id === selectedExamSetId);
