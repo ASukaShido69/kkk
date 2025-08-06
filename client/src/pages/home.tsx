@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import { Clock, BookOpen, Target, Star, Play, Trophy, Users, TrendingUp } from "lucide-react";
+import type { ExamSet } from "@shared/schema";
 
 const categories = [
   { id: "ความสามารถทั่วไป", name: "ความสามารถทั่วไป", maxQuestions: 30 },
@@ -15,7 +19,8 @@ const categories = [
 ];
 
 export default function HomePage() {
-  const [examType, setExamType] = useState<"full" | "custom">("full");
+  const [examType, setExamType] = useState<"examSet" | "custom">("examSet");
+  const [selectedExamSetId, setSelectedExamSetId] = useState<string>("");
   const [customConfig, setCustomConfig] = useState<Record<string, number>>({});
 
   const { data: stats } = useQuery<{ totalQuestions: number; totalExams: number; averageScore: number; averageTime: number }>({
@@ -25,6 +30,17 @@ export default function HomePage() {
   const { data: questions } = useQuery<any[]>({
     queryKey: ["/api/questions"],
   });
+
+  const { data: examSets } = useQuery<ExamSet[]>({
+    queryKey: ["/api/exam-sets"],
+  });
+
+  // Auto-select first exam set when available
+  useEffect(() => {
+    if (examSets && examSets.length > 0 && !selectedExamSetId) {
+      setSelectedExamSetId(examSets[0].id);
+    }
+  }, [examSets, selectedExamSetId]);
 
   const handleCustomConfigChange = (categoryId: string, count: number) => {
     setCustomConfig(prev => ({
@@ -38,6 +54,7 @@ export default function HomePage() {
   const handleStartExam = () => {
     const config = {
       type: examType,
+      examSetId: examType === "examSet" ? selectedExamSetId : undefined,
       categories: examType === "custom" ? customConfig : undefined,
     };
     
@@ -45,24 +62,58 @@ export default function HomePage() {
     localStorage.setItem("examConfig", JSON.stringify(config));
   };
 
+  const selectedExamSet = examSets?.find(set => set.id === selectedExamSetId);
+  const totalExamSetQuestions = selectedExamSet 
+    ? Object.values(selectedExamSet.categoryDistribution).reduce((sum, count) => sum + count, 0)
+    : 0;
+
   return (
-    <div className="min-h-screen bg-primary-bg">
-      {/* Navigation Header */}
-      <nav className="bg-white shadow-sm border-b border-secondary-gray">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-primary-blue">Leo Exam 2568</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Hero Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div className="max-w-6xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex justify-center mb-6">
+              <div className="bg-white/20 backdrop-blur-md p-4 rounded-2xl">
+                <BookOpen className="h-12 w-12 text-white" />
+              </div>
             </div>
-            <div className="flex space-x-4">
+            <h1 className="text-4xl font-bold mb-4">Leo Exam 2568</h1>
+            <p className="text-xl text-blue-100 mb-6">แอปพลิเคชันฝึกสอบนายสิบตำรวจ</p>
+            <div className="flex justify-center space-x-8 text-center">
+              <div>
+                <div className="text-2xl font-bold">{stats?.totalQuestions || 0}</div>
+                <div className="text-blue-100 text-sm">ข้อสอบทั้งหมด</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{stats?.totalExams || 0}</div>
+                <div className="text-blue-100 text-sm">ครั้งที่ทำสอบ</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{stats?.averageScore || 0}%</div>
+                <div className="text-blue-100 text-sm">คะแนนเฉลี่ย</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-6">
               <Link href="/profile">
-                <Button variant="ghost" className="text-gray-600 hover:text-primary-blue">
-                  โปรไฟล์
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl">
+                  <Target className="h-4 w-4 mr-2" />
+                  สถิติของฉัน
                 </Button>
               </Link>
+            </div>
+            <div>
               <Link href="/admin">
-                <Button variant="ghost" className="text-gray-600 hover:text-primary-blue">
-                  จัดการ
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl">
+                  จัดการระบบ
                 </Button>
               </Link>
             </div>
@@ -70,139 +121,186 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <main className="max-w-4xl mx-auto px-4 py-8 sm:py-16">
-        {/* Hero Banner */}
-        <div className="relative mb-12">
-          <div className="w-full aspect-video rounded-2xl overflow-hidden card-shadow bg-gradient-to-r from-blue-600 to-blue-800">
-            <div className="w-full h-full flex items-center justify-center relative">
-              {/* Thai police theme SVG */}
-              <div className="absolute inset-0 bg-black bg-opacity-40 rounded-2xl flex items-center justify-center">
-                <div className="text-center text-white">
-                  <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">เทพเจ้าลีโอ</h2>
-                  <p className="text-lg sm:text-xl opacity-90">กำลังเตรียมสอบนายสิบตำรวจ</p>
-                </div>
-              </div>
-              <svg className="w-full h-full object-cover opacity-20" viewBox="0 0 400 225" fill="none">
-                <rect width="400" height="225" fill="url(#police-gradient)"/>
-                <circle cx="200" cy="112" r="40" fill="white" opacity="0.1"/>
-                <rect x="180" y="80" width="40" height="60" rx="20" fill="white" opacity="0.1"/>
-                <rect x="160" y="140" width="80" height="40" rx="5" fill="white" opacity="0.1"/>
-                <defs>
-                  <linearGradient id="police-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#1e40af"/>
-                    <stop offset="100%" stopColor="#1e3a8a"/>
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-          </div>
-        </div>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Exam Selection */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-xl border-0 bg-white/70 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                  <Play className="h-6 w-6 mr-3 text-blue-600" />
+                  เริ่มทำการสอบ
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  เลือกรูปแบบการสอบที่ต้องการ
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Tabs value={examType} onValueChange={(value) => setExamType(value as "examSet" | "custom")}>
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-xl p-1">
+                    <TabsTrigger value="examSet" className="rounded-lg font-medium">ชุดข้อสอบมาตรฐาน</TabsTrigger>
+                    <TabsTrigger value="custom" className="rounded-lg font-medium">สอบแบบกำหนดเอง</TabsTrigger>
+                  </TabsList>
 
-        {/* Main Action Section */}
-        <div className="text-center mb-12">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-6">เริ่มต้นการฝึกสอบจำลอง</h3>
-          
-          {/* Exam Configuration Card */}
-          <Card className="max-w-2xl mx-auto mb-8">
-            <CardContent className="pt-6 p-8">
-              <h4 className="text-lg font-medium mb-6">เลือกรูปแบบการสอบ</h4>
-              
-              {/* Exam Type Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <Button
-                  variant={examType === "full" ? "default" : "outline"}
-                  className={`p-6 h-auto flex-col ${examType === "full" ? "bg-primary-blue hover:bg-blue-500" : ""}`}
-                  onClick={() => setExamType("full")}
-                >
-                  <div className="font-medium mb-2">สอบเต็มรูปแบบ</div>
-                  <div className="text-sm opacity-80">150 ข้อ • 3 ชั่วโมง</div>
-                </Button>
-                
-                <Button
-                  variant={examType === "custom" ? "default" : "outline"}
-                  className={`p-6 h-auto flex-col ${examType === "custom" ? "bg-primary-blue hover:bg-blue-500" : ""}`}
-                  onClick={() => setExamType("custom")}
-                >
-                  <div className="font-medium mb-2">สอบแบบกำหนดเอง</div>
-                  <div className="text-sm opacity-80">เลือกวิชาและจำนวนข้อ</div>
-                </Button>
-              </div>
+                  <TabsContent value="examSet" className="space-y-4 mt-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">เลือกชุดข้อสอบ</label>
+                      <Select value={selectedExamSetId} onValueChange={setSelectedExamSetId}>
+                        <SelectTrigger className="w-full h-12 border-gray-200 rounded-xl">
+                          <SelectValue placeholder="เลือกชุดข้อสอบ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {examSets?.map((examSet) => (
+                            <SelectItem key={examSet.id} value={examSet.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{examSet.name}</span>
+                                <span className="text-sm text-gray-500">{examSet.description}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* Custom Exam Configuration */}
-              {examType === "custom" && (
-                <div className="border-t pt-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    {categories.map((category) => (
-                      <div key={category.id} className="text-left">
-                        <label className="block text-sm font-medium mb-2">{category.name}</label>
-                        <Select
-                          value={customConfig[category.id]?.toString() || "0"}
-                          onValueChange={(value) => handleCustomConfigChange(category.id, parseInt(value))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">ไม่สอบ</SelectItem>
-                            <SelectItem value="10">10 ข้อ</SelectItem>
-                            <SelectItem value="15">15 ข้อ</SelectItem>
-                            <SelectItem value="20">20 ข้อ</SelectItem>
-                            <SelectItem value="25">25 ข้อ</SelectItem>
-                            <SelectItem value="30">30 ข้อ</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    {selectedExamSet && (
+                      <div className="bg-blue-50 rounded-xl p-4">
+                        <h4 className="font-semibold text-blue-900 mb-3">รายละเอียดชุดข้อสอบ</h4>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          {Object.entries(selectedExamSet.categoryDistribution).map(([category, count]) => (
+                            <div key={category} className="flex justify-between">
+                              <span className="text-gray-700">{categories.find(c => c.id === category)?.name || category}:</span>
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800">{count} ข้อ</Badge>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <div className="flex justify-between font-semibold text-blue-900">
+                            <span>รวมทั้งหมด:</span>
+                            <span>{totalExamSetQuestions} ข้อ</span>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm text-gray-600">
-                      รวม: <span className="font-medium text-primary-blue">{totalCustomQuestions} ข้อ</span>
-                    </span>
-                  </div>
-                </div>
-              )}
+                    )}
+                  </TabsContent>
 
-              <Link href="/exam" onClick={handleStartExam}>
-                <Button 
-                  className="w-full sm:w-auto px-12 py-4 bg-primary-blue text-white text-lg font-medium hover:bg-blue-500 hover-scale"
-                  disabled={examType === "custom" && totalCustomQuestions === 0}
-                >
-                  เริ่มสอบจำลอง
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+                  <TabsContent value="custom" className="space-y-4 mt-6">
+                    <div className="space-y-4">
+                      <div className="text-sm text-gray-600 mb-4">กำหนดจำนวนข้อสอบในแต่ละหมวดวิชา (สูงสุด 150 ข้อ)</div>
+                      {categories.map((category) => (
+                        <div key={category.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">
+                              {category.name}
+                            </label>
+                            <span className="text-xs text-gray-500">สูงสุด {category.maxQuestions} ข้อ</span>
+                          </div>
+                          <Select 
+                            value={String(customConfig[category.id] || 0)} 
+                            onValueChange={(value) => handleCustomConfigChange(category.id, parseInt(value))}
+                          >
+                            <SelectTrigger className="w-20 h-10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: category.maxQuestions + 1 }, (_, i) => (
+                                <SelectItem key={i} value={String(i)}>{i}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                      
+                      {totalCustomQuestions > 0 && (
+                        <div className="bg-green-50 rounded-xl p-4">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-green-900">รวมจำนวนข้อสอบ</span>
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              {totalCustomQuestions} ข้อ
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <div className="text-2xl font-bold text-primary-blue mb-1">
-                  {questions?.length || 0}
+                <div className="pt-4">
+                  <Link href="/exam" onClick={handleStartExam}>
+                    <Button 
+                      className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-lg"
+                      disabled={
+                        (examType === "examSet" && !selectedExamSetId) ||
+                        (examType === "custom" && totalCustomQuestions === 0)
+                      }
+                    >
+                      <Play className="h-5 w-5 mr-3" />
+                      เริ่มทำการสอบ
+                    </Button>
+                  </Link>
                 </div>
-                <div className="text-sm text-gray-600">ข้อสอบทั้งหมด</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <div className="text-2xl font-bold text-green-600 mb-1">
-                  {stats?.totalExams || 0}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold flex items-center">
+                  <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
+                  สถิติ
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">เวลาเฉลี่ย</span>
+                  </div>
+                  <span className="font-semibold">{Math.floor((stats?.averageTime || 0) / 60)} นาที</span>
                 </div>
-                <div className="text-sm text-gray-600">ครั้งที่สอบแล้ว</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Trophy className="h-4 w-4 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">คะแนนเฉลี่ย</span>
+                  </div>
+                  <span className="font-semibold">{stats?.averageScore || 0}%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">ครั้งที่สอบ</span>
+                  </div>
+                  <span className="font-semibold">{stats?.totalExams || 0} ครั้ง</span>
+                </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <div className="text-2xl font-bold text-orange-600 mb-1">
-                  {stats?.averageScore || 0}%
-                </div>
-                <div className="text-sm text-gray-600">คะแนนเฉลี่ย</div>
+
+            {/* Quick Access */}
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">เมนูหลัก</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Link href="/profile">
+                  <Button variant="ghost" className="w-full justify-start rounded-xl hover:bg-blue-50 hover:text-blue-600">
+                    <Target className="h-4 w-4 mr-3" />
+                    ดูผลสอบของฉัน
+                  </Button>
+                </Link>
+                <Link href="/admin">
+                  <Button variant="ghost" className="w-full justify-start rounded-xl hover:bg-blue-50 hover:text-blue-600">
+                    <BookOpen className="h-4 w-4 mr-3" />
+                    จัดการข้อสอบ
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -258,6 +258,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Exam Sets endpoints
+  app.get("/api/exam-sets", async (req, res) => {
+    try {
+      const examSets = await storage.getExamSets();
+      res.json(examSets);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exam sets" });
+    }
+  });
+
+  app.get("/api/exam-sets/:id", async (req, res) => {
+    try {
+      const examSet = await storage.getExamSet(req.params.id);
+      if (!examSet) {
+        return res.status(404).json({ message: "Exam set not found" });
+      }
+      res.json(examSet);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exam set" });
+    }
+  });
+
+  app.post("/api/exam-sets", async (req, res) => {
+    try {
+      const result = insertExamSetSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      const examSet = await storage.createExamSet(result.data);
+      res.status(201).json(examSet);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create exam set" });
+    }
+  });
+
+  app.put("/api/exam-sets/:id", async (req, res) => {
+    try {
+      const result = insertExamSetSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      const examSet = await storage.updateExamSet(req.params.id, result.data);
+      if (!examSet) {
+        return res.status(404).json({ message: "Exam set not found" });
+      }
+      res.json(examSet);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update exam set" });
+    }
+  });
+
+  app.delete("/api/exam-sets/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteExamSet(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Exam set not found" });
+      }
+      res.json({ message: "Exam set deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete exam set" });
+    }
+  });
+
+  // Updated mock exam endpoint to use exam sets
+  app.post("/api/mock-exam", async (req, res) => {
+    try {
+      const { examSetId, customCategories } = req.body;
+      
+      let questions;
+      if (examSetId) {
+        const examSet = await storage.getExamSet(examSetId);
+        if (!examSet) {
+          return res.status(404).json({ message: "Exam set not found" });
+        }
+        questions = await storage.getRandomQuestions(150, examSet.categoryDistribution);
+      } else if (customCategories) {
+        questions = await storage.getRandomQuestions(
+          Object.values(customCategories).reduce((a, b) => (a as number) + (b as number), 0) as number,
+          customCategories
+        );
+      } else {
+        // Default exam with standard distribution
+        const defaultDistribution = {
+          "ความสามารถทั่วไป": 30,
+          "ภาษาไทย": 25,
+          "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)": 25,
+          "ภาษาอังกฤษ": 30,
+          "สังคม วัฒนธรรม จริยธรรม และอาเซียน": 20,
+          "กฎหมายที่ประชาชนควรรู้": 20
+        };
+        questions = await storage.getRandomQuestions(150, defaultDistribution);
+      }
+      
+      res.json(questions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate mock exam" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -14,6 +14,15 @@ export const questions = pgTable("questions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const examSets = pgTable("exam_sets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  categoryDistribution: jsonb("category_distribution").$type<Record<string, number>>().notNull(),
+  isActive: integer("is_active").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const scores = pgTable("scores", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   totalScore: integer("total_score").notNull(),
@@ -22,11 +31,17 @@ export const scores = pgTable("scores", {
   dateTaken: timestamp("date_taken").defaultNow(),
   timeSpent: integer("time_spent").notNull(), // in seconds
   examType: text("exam_type").notNull(),
+  examSetId: varchar("exam_set_id"),
   answersGiven: jsonb("answers_given").$type<Record<string, number>>().notNull(),
   categoryBreakdown: jsonb("category_breakdown").$type<Record<string, { correct: number; total: number }>>(),
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertExamSetSchema = createInsertSchema(examSets).omit({
   id: true,
   createdAt: true,
 });
@@ -38,6 +53,8 @@ export const insertScoreSchema = createInsertSchema(scores).omit({
 
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export type Question = typeof questions.$inferSelect;
+export type InsertExamSet = z.infer<typeof insertExamSetSchema>;
+export type ExamSet = typeof examSets.$inferSelect;
 export type InsertScore = z.infer<typeof insertScoreSchema>;
 export type Score = typeof scores.$inferSelect;
 

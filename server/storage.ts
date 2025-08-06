@@ -1,4 +1,4 @@
-import { type Question, type InsertQuestion, type Score, type InsertScore } from "@shared/schema";
+import { type Question, type InsertQuestion, type Score, type InsertScore, type ExamSet, type InsertExamSet } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -9,6 +9,13 @@ export interface IStorage {
   updateQuestion(id: string, question: Partial<InsertQuestion>): Promise<Question | undefined>;
   deleteQuestion(id: string): Promise<boolean>;
   getRandomQuestions(count: number, categories?: Record<string, number>): Promise<Question[]>;
+  
+  // Exam Sets
+  getExamSets(): Promise<ExamSet[]>;
+  getExamSet(id: string): Promise<ExamSet | undefined>;
+  createExamSet(examSet: InsertExamSet): Promise<ExamSet>;
+  updateExamSet(id: string, examSet: Partial<InsertExamSet>): Promise<ExamSet | undefined>;
+  deleteExamSet(id: string): Promise<boolean>;
   
   // Scores
   getScores(): Promise<Score[]>;
@@ -22,11 +29,14 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private questions: Map<string, Question>;
   private scores: Map<string, Score>;
+  private examSets: Map<string, ExamSet>;
 
   constructor() {
     this.questions = new Map();
     this.scores = new Map();
+    this.examSets = new Map();
     this.initializeSampleData();
+    this.initializeDefaultExamSet();
   }
 
   private initializeSampleData() {
@@ -88,6 +98,25 @@ export class MemStorage implements IStorage {
       };
       this.questions.set(id, question);
     });
+  }
+
+  private initializeDefaultExamSet() {
+    const defaultExamSet: ExamSet = {
+      id: randomUUID(),
+      name: "การสอบนายสิบตำรวจ 2568",
+      description: "ชุดข้อสอบมาตรฐานสำหรับการสอบนายสิบตำรวจ ประจำปี 2568 จำนวน 150 ข้อ",
+      categoryDistribution: {
+        "ความสามารถทั่วไป": 30,
+        "ภาษาไทย": 25,
+        "คอมพิวเตอร์ (เทคโนโลยีสารสนเทศ)": 25,
+        "ภาษาอังกฤษ": 30,
+        "สังคม วัฒนธรรม จริยธรรม และอาเซียน": 20,
+        "กฎหมายที่ประชาชนควรรู้": 20
+      },
+      isActive: 1,
+      createdAt: new Date()
+    };
+    this.examSets.set(defaultExamSet.id, defaultExamSet);
   }
 
   async getQuestions(filters?: { category?: string; difficulty?: string; search?: string }): Promise<Question[]> {
@@ -211,6 +240,43 @@ export class MemStorage implements IStorage {
     }
     
     return { success, errors };
+  }
+
+  // Exam Sets methods
+  async getExamSets(): Promise<ExamSet[]> {
+    return Array.from(this.examSets.values())
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async getExamSet(id: string): Promise<ExamSet | undefined> {
+    return this.examSets.get(id);
+  }
+
+  async createExamSet(insertExamSet: InsertExamSet): Promise<ExamSet> {
+    const id = randomUUID();
+    const examSet: ExamSet = {
+      ...insertExamSet,
+      id,
+      createdAt: new Date()
+    };
+    this.examSets.set(id, examSet);
+    return examSet;
+  }
+
+  async updateExamSet(id: string, updateData: Partial<InsertExamSet>): Promise<ExamSet | undefined> {
+    const existingExamSet = this.examSets.get(id);
+    if (!existingExamSet) return undefined;
+
+    const updatedExamSet: ExamSet = {
+      ...existingExamSet,
+      ...updateData
+    };
+    this.examSets.set(id, updatedExamSet);
+    return updatedExamSet;
+  }
+
+  async deleteExamSet(id: string): Promise<boolean> {
+    return this.examSets.delete(id);
   }
 }
 
